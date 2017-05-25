@@ -1,10 +1,8 @@
 # StatusCakeDSC
 
-A PowerShell Desired State Configuration Provider for simple status checks on [Statuscake.io](http://statuscake.io)
+A PowerShell Desired State Configuration Provider for simple status checks on [Statuscake.com](http://statuscake.com)
 
-This Resource is currently in development and is not yet recommended for Production use.
 
-This file will be updated with release details when the resource is considered production ready. If you want to speed up the process, see below under 'Contribs'
 
 ## Requirements
 
