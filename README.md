@@ -16,7 +16,17 @@ A PowerShell Desired State Configuration Provider for simple status checks on [S
 iex ([WebClient].DownloadString("https://githubusercontent.com/stopthatastronaut/StatusCakeDSC/master/install.ps1"))
 ```
 
+## Installing via git clone
+
+- Clone the repo down to your local machine
+- Use junction.exe (from the sysinternals resource kit) to junction `c:\Program Files\WindowsPowershell\Modules\StatuscakeDSC` to the corresponding repo location
+- Test this has worked correctly by restarting your powershell session and running
+
+`Get-DSCResource -modulename StatusCakeDSC`
+
 ## How to use
+
+The quick start:
 
 ```
 configuration MyStatusCakeConfig
@@ -49,6 +59,11 @@ configuration MyStatusCakeConfig
 MyStatusCakeConfig -OutputPath $env:tmp\StatusCake
 Start-DSConfiguration $env:tmp\StatusCake -verbose -wait -force
 ```
+
+Running `Get-DscResource -Module StatusCakeDSC -Syntax` Will give you all your possible parameters.
+
+
+There will be further documentation available by running `Get-Help about_DSCResource_StatusCakeDSC` as soon as I have time to write it
 
 ## Credentials
 
