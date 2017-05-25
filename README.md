@@ -41,7 +41,7 @@ configuration MyStatusCakeConfig
             Ensure = "present"
             Name = "My Website Check"
             Url = "http://www.organisation.com/ping/"
-            COntactGroup = "DevOpsEngineers"
+            ContactGroup = "DevOpsEngineers"
         }
     }
 }
