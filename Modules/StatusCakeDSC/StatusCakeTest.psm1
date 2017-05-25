@@ -54,10 +54,11 @@ class StatusCakeTest
     {        
         $refObject = $this.Get()
 
-        if($this.Ensure -eq "Absent")
+        if($this.Ensure -eq [Ensure]::Absent)
         {
             # we need to delete it"
-            $status = $this.GetApiResponse(("/Tests/Details/?TestID=" + $this.TestID), 'DELETE', $null)
+            Write-Verbose ("Deleting Test " + $this.Name)
+            $status = $this.GetApiResponse(("/Tests/Details/?TestID=" + $refObject.TestID), 'DELETE', $null)
         }
         else
         {
@@ -66,7 +67,7 @@ class StatusCakeTest
                 # we need to create it
                 
                 Write-Verbose ("Creating Test " + $this.Name)
-                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost($this.TestID, $this.COntactGroupID))
+                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost($this.TestID, $this.ContactGroupID))
             }
             else
             {
@@ -142,6 +143,8 @@ class StatusCakeTest
             $returnobject.Paused = $testdetails.paused 
             $returnobject.ContactGroup = $testDetails.ContactGroups | select -expand Name
             $returnobject.ContactGroupID = $testdetails.ContactGroups | select -expand ID
+            $returnObject.TestID = $CheckID
+            $this.TestID = $CheckID
         }
         return $returnobject 
     }
