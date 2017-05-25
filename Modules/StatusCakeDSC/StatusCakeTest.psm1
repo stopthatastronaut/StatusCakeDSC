@@ -109,10 +109,42 @@ class StatusCakeTest
         }
 
         return $testOK
-    }    
+    }
+
+    [bool] Validate()
+    {
+        $paramsOK = $true # assume we're OK
+
+        if($this.CheckRate -ge 24000)
+        {
+            throw "Checkrate cannot be larger than 24000"
+        }
+
+        if($this.CheckRate -le 0)
+        {
+            throw "Checkrate cannot be zero or negative"
+        }
+
+        # if basic user, need basicpass and vice versa
+
+        if($this.BasicUser -ne $null -and $this.BasicPass -eq $null)
+        {
+            throw "If specifying basic user, you must also include as password"
+        }
+
+        if($this.BasicUser -eq $null -and $this.BasicPass -ne $null)
+        {
+            throw "If specifying a basic password, you must also specify a username"
+        }
+
+        return $paramsOK
+    }
 
     [StatusCakeTest] Get()
     {        
+        # first things first, validate
+        $this.Validate();
+        
         # does it exist?
         $checkId = $this.GetApiResponse("/Tests/", "Get", $null) | ? {$_.WebsiteName -eq $this.Name} | Select -expand TestId
         $returnobject = [StatusCakeTest]::new()      

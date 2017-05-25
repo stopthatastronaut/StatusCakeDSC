@@ -14,7 +14,7 @@ Describe "validation" {
 
 }
 
-Describe "The statuscaketest HTTP bits" {
+Describe "The statuscaketest bits" {
     $sccg = [StatusCakeTest]::New()   
 
     $NewTestName = "Pester Test $uniquekey"
@@ -41,6 +41,10 @@ Describe "The statuscaketest HTTP bits" {
 
     It "should have the test we just created" {
         $sccg.Get() | select -expand TestID | Should Not Be 0
+    }
+
+    It "Should be able to find the test by name" {
+        $sccg.GetApiResponse("/Tests/", "GET", $null) | ? { $_.WebSiteName -eq $NewTestName } | Should Not Be $null
     }
 
     It "Can delete a test" {

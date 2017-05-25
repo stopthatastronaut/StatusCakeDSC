@@ -11,6 +11,14 @@
             Paused = $true
             CheckRate = 50
         }
+
+        StatusCakeContactGroup MyGroup
+        {
+            Ensure = "absent"
+            GroupName = "Manual Test 654321"
+            Email = @("test@test.com", "test2@test.com")
+            PingUrl = "http://d.evops.co/ping"
+        }
     }
 }
 
