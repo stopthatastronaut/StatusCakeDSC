@@ -1,6 +1,6 @@
 # StatusCakeDSC
 
-A PowerShell Desired State Configuration Provider for simple status checks on [Statuscake.com](http://statuscake.com)
+A PowerShell Desired State Configuration Provider for simple status checks on [Statuscake.com](http://statuscake.com). Gives powershell users a nice, declarative syntax for defining checks as part of their infrastructure-as-code repositories.
 
 
 
