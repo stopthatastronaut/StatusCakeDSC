@@ -1,0 +1,18 @@
+TOPIC
+	about_DSCResource_StatusCakeContactGroup
+	
+SHORT DESCRIPTION
+	
+	
+LONG DESCRIPTION
+	
+	
+ATTRIBUTES
+	
+SYNTAX
+
+	
+LINKS
+	
+	
+	

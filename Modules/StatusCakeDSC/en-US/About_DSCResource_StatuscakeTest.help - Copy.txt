@@ -1,0 +1,20 @@
+TOPIC
+	about_DSCResource_StatusCakeTest
+	
+SHORT DESCRIPTION
+	
+	
+LONG DESCRIPTION
+	
+	
+ATTRIBUTES
+	
+
+SYNTAX
+
+	
+	
+LINKS
+	
+	
+	

@@ -5,7 +5,12 @@ if(!(Test-Path $targetpath))
 {
     New-item -Path $targetPath -Type Directory -Force -Verbose
 }
+else
+{
+# first, check if we need to install it at all
+    $hashfile = iwr -uri ($rawfilehost, "hashes.json" -join "") | select -expand ResponseBody
 
+}
 # files required
 
 @(
