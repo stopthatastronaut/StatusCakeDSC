@@ -62,7 +62,7 @@ class StatusCakeTest
         }
         else
         {
-            if($this.TestID -eq $null)
+            if($refObject.TestID -eq $null)
             {
                 # we need to create it
                 
@@ -148,6 +148,9 @@ class StatusCakeTest
         # does it exist?
         $checkId = $this.GetApiResponse("/Tests/", "Get", $null) | ? {$_.WebsiteName -eq $this.Name} | Select -expand TestId
         $returnobject = [StatusCakeTest]::new()      
+
+        # need a check here for duped by name
+
 
         if(-not $checkId)
         {
@@ -269,47 +272,47 @@ class StatusCakeTest
 Node locations: 
 (only valid for premium accounts)
 
-Australia – Sydney
-Austria – Vienna
-Belgium – Oostkamp
-Brazil – Sao Paulo
-Canada – Montreal
-Canada – Toronto
-Chile – Vina Del Mar
-France – Paris
-France – Lille
-Germany – Berlin
-Germany – Frankfurt
+Australia ï¿½ Sydney
+Austria ï¿½ Vienna
+Belgium ï¿½ Oostkamp
+Brazil ï¿½ Sao Paulo
+Canada ï¿½ Montreal
+Canada ï¿½ Toronto
+Chile ï¿½ Vina Del Mar
+France ï¿½ Paris
+France ï¿½ Lille
+Germany ï¿½ Berlin
+Germany ï¿½ Frankfurt
 Hong Kong
-Hungary – Budapest
-Ireland – Dublin
-Japan – Tokyo
-Mexico – Mexico City
-Netherlands – Amsterdam
-Iceland – Reykjavík
-India – Bangalore
-Israel – Tel Aviv
-Italy – Milano
-Mexico – Mexico City
+Hungary ï¿½ Budapest
+Ireland ï¿½ Dublin
+Japan ï¿½ Tokyo
+Mexico ï¿½ Mexico City
+Netherlands ï¿½ Amsterdam
+Iceland ï¿½ Reykjavï¿½k
+India ï¿½ Bangalore
+Israel ï¿½ Tel Aviv
+Italy ï¿½ Milano
+Mexico ï¿½ Mexico City
 New Zealand- Auckland
-Poland – Warsaw
-Russia – Moscow
-Russia – Novosibirsk
+Poland ï¿½ Warsaw
+Russia ï¿½ Moscow
+Russia ï¿½ Novosibirsk
 Singapore
-South Africa – Johannesburg
-Spain – Madrid
-Sweden – Stockholm
-Switzerland – Bern
-United Kingdom – London
-United Kingdom – Manchester
-United States – Atlanta, Georgia
-United States – Chicago, Illinois
-United States – Dallas, Texas
-United States – Jacksonville, Florida
-United States – Los Angeles, California
-United Status – San Francisco, California
-United States – Silicon Valley, California
-United States – Phoenix, Arizona,
-United States – New York, New York
+South Africa ï¿½ Johannesburg
+Spain ï¿½ Madrid
+Sweden ï¿½ Stockholm
+Switzerland ï¿½ Bern
+United Kingdom ï¿½ London
+United Kingdom ï¿½ Manchester
+United States ï¿½ Atlanta, Georgia
+United States ï¿½ Chicago, Illinois
+United States ï¿½ Dallas, Texas
+United States ï¿½ Jacksonville, Florida
+United States ï¿½ Los Angeles, California
+United Status ï¿½ San Francisco, California
+United States ï¿½ Silicon Valley, California
+United States ï¿½ Phoenix, Arizona,
+United States ï¿½ New York, New York
 
 #>
