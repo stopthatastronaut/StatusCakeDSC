@@ -150,7 +150,10 @@ class StatusCakeTest
         $returnobject = [StatusCakeTest]::new()      
 
         # need a check here for duped by name
-
+        if($checkId -is [Array])
+        {
+            throw "Multiple Ids found with the same name. StatusCakeDSC uses Test Name as a unique key, and cannot continue"
+        }
 
         if(-not $checkId)
         {
