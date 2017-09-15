@@ -19,6 +19,11 @@ Describe "The statuscaketest bits" {
 
     $NewTestName = "Pester Test $uniquekey"
 
+    It "Can resolve a ContactGroup called 'stopthatastronaut'" {
+
+        $sccg.ResolveContactGroups(@("stopthatastronaut")).length | Should BeGreaterThan 0
+    }
+
     It "Can list out tests using the internal method" {
     {      
             $sccg.GetApiResponse("/Tests/", "GET", $null) } | Should Not Throw
@@ -32,6 +37,7 @@ Describe "The statuscaketest bits" {
             $sccg.URL = 'https://www.google.com/'
             $sccg.Paused = $true
             $sccg.TestType = 'HTTP'
+            $sccg.ContactGroup = "stopthatastronaut"
 
             $sccg.Set() } | Should Not Throw
     }

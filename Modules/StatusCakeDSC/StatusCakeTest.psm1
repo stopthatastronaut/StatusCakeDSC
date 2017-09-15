@@ -220,14 +220,14 @@ class StatusCakeTest
         return $httpresponse
     }
 
-    [int[]] ResolveContactGroups($cgNames)
+    [int[]] ResolveContactGroups([string[]]$cgNames)
     {
         Write-Verbose "Resolving Contact Groups"
         $groups = $this.GetApiResponse("/ContactGroups", 'GET', $null)
         $r = @()
-        $cgNames | ForEach-Object {
-            Write-Verbose ("Resolving group name " + $_)
-            $r += ($groups | Where-Object { $_.GroupName -eq $_ } | Select-Object -expand ContactID)
+        for($x=0;$x -lt $cgNames.Length;$x++) {
+            Write-Verbose ("Resolving group name " + $cgNames[$x])
+            $r += ($groups | Where-Object { $_.GroupName -eq $cgNames[$x] } | Select-Object -expand ContactID)
         }
         Write-Verbose ("Found Contact Groups " + ($r -join ","))
         return $r
