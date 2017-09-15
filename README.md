@@ -1,12 +1,10 @@
 # StatusCakeDSC
 
-A PowerShell Desired State Configuration Provider for simple status checks on [Statuscake.com](http://statuscake.com). Gives powershell users a nice, declarative syntax for defining checks as part of their infrastructure-as-code repositories.
-
-
+A PowerShell Desired State Configuration (DSC) Provider for simple status checks on [Statuscake.com](http://statuscake.com). Gives PowerShell users a nice, declarative syntax for defining checks as part of their infrastructure-as-code repositories.
 
 ## Requirements
 
-- PowerShell/WMF 5.0
+- PowerShell/WMF 5.0+
 - StatusCake account & API Key
 - A check target
 
@@ -95,8 +93,10 @@ Using the `.creds` option does not support multiple StatusCake accounts at this 
 
 ## Testing
 
-To run the full suite of automatic tests, you will need valid credentials in a .creds file. There is a subset of tests that can run without.
+To run the full suite of automatic tests, you will need valid credentials for an Active Statuscake account, in a .creds file. There is a subset of tests that can run without, but for full functionality, you need them.
+
+They also expect two contact groups to exist, called "stopthatastronaut" and "stopthatastronaut2". Change these to match your environment or add some groups to your environment
 
 ## Contribs/Reporting bugs
 
-Feel free to submit PRs or bug reports via Github
+Feel free to submit PRs or bug reports via Github. I don't bite. Much.

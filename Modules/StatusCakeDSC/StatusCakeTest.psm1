@@ -217,6 +217,12 @@ class StatusCakeTest
             $httpresponse =  Invoke-RestMethod "https://app.statuscake.com/API$stem" `
                 -method GET -headers @{API = $this.ApiKey; username = $this.UserName}                 
         }
+        # if the issues array is not empty, we should throw here. probably
+
+        if(($httpresponse.issues | measure | select -expand Count) -gt 0 ) {
+            throw ($httpresponse.Issues | out-string)
+        }
+
         return $httpresponse
     }
 

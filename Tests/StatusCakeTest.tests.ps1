@@ -10,8 +10,25 @@ Describe "Object and properties" {
 
 }
 
-Describe "validation" {
+Describe "Validation" {
+    It "Throws if you provide a basic user but no basic pass" {
+        { $sccg = [StatusCakeTest]::New()   
+        $sccg.BasicPass = "P@ssword1!"
+        $sccg.Validate() } | Should Throw
+    }
 
+    It "Vice Versa" {
+        { $sccg = [StatusCakeTest]::New()   
+            $sccg.BasicUser = "UserName"
+            $sccg.Validate() } | Should Throw
+    }
+
+    It "Should not throw if you have both" {
+        { $sccg = [StatusCakeTest]::New()   
+            $sccg.BasicPass = "P@ssword1!"
+            $sccg.BasicUser = "UserName"
+            $sccg.Validate() } | Should Not Throw
+    }
 }
 
 Describe "The statuscaketest bits" {
@@ -37,7 +54,7 @@ Describe "The statuscaketest bits" {
             $sccg.URL = 'https://www.google.com/'
             $sccg.Paused = $true
             $sccg.TestType = 'HTTP'
-            $sccg.ContactGroup = "stopthatastronaut"
+            $sccg.ContactGroup = @("stopthatastronaut", "stopthatastronaut2")
 
             $sccg.Set() } | Should Not Throw
     }
@@ -47,6 +64,10 @@ Describe "The statuscaketest bits" {
 
     It "should have the test we just created" {
         $sccg.Get() | select -expand TestID | Should Not Be 0
+    }
+
+    It "the test we just created should be valid" {
+
     }
 
     It "Should be able to find the test by name" {
