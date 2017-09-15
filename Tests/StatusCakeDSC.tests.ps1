@@ -1,5 +1,6 @@
 # generate checksums pre-commit, add them to our git commit
 
+
 $hashArray = @()
 @(
     "StatusCakeTest.psm1", 

@@ -47,6 +47,10 @@ Describe "The statuscaketest bits" {
         $sccg.GetApiResponse("/Tests/", "GET", $null) | ? { $_.WebSiteName -eq $NewTestName } | Should Not Be $null
     }
 
+    It "Should not throw if we try to create it again" {
+        { $sccg.Set() } | Should Not Throw 
+    }
+
     It "Can delete a test" {
         {   $sccg.Ensure = 'Absent'
             $sccg.Set() } | Should Not Throw            

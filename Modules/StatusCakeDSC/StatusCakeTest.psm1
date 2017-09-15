@@ -28,9 +28,9 @@ class StatusCakeTest
     [DscProperty()]
     [int] $Timeout
     [DscProperty()]
-    [string] $BasicUser
+    [string] $BasicUser = $null
     [DscProperty()]
-    [string] $BasicPass
+    [string] $BasicPass = $null
     [DscProperty()]
     [bool] $Public
     [DscProperty()]
@@ -62,18 +62,17 @@ class StatusCakeTest
         }
         else
         {
-            if($refObject.TestID -eq $null)
+            if($refObject.TestID -eq 0)
             {
-                # we need to create it
-                
+                # we need to create it                
                 Write-Verbose ("Creating Test " + $this.Name)
-                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost($this.TestID, $this.ContactGroupID))
+                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost(0, $this.ContactGroupID))
             }
             else
             {
                 # we need to update it
                 Write-Verbose ("Updating Test " + $this.Name)
-                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost(0, $this.ContactGroupID))
+                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost($refObject.TestId, $this.ContactGroupID))
             }
         }
         Write-Verbose ("Status returned from API: " + ($status | ConvertTo-json -depth 4))
@@ -111,10 +110,8 @@ class StatusCakeTest
         return $testOK
     }
 
-    [bool] Validate()
+    [void] Validate()
     {
-        $paramsOK = $true # assume we're OK
-
         if($this.CheckRate -ge 24000)
         {
             throw "Checkrate cannot be larger than 24000"
@@ -127,17 +124,15 @@ class StatusCakeTest
 
         # if basic user, need basicpass and vice versa
 
-        if($this.BasicUser -ne $null -and $this.BasicPass -eq $null)
+        if(($this.BasicUser) -and (-not $this.BasicPass))
         {
-            throw "If specifying basic user, you must also include as password"
+            throw "If specifying basic user, you must also include a password"
         }
 
-        if($this.BasicUser -eq $null -and $this.BasicPass -ne $null)
+        if((-not $this.BasicUser) -and ($this.BasicPass))
         {
             throw "If specifying a basic password, you must also specify a username"
         }
-
-        return $paramsOK
     }
 
     [StatusCakeTest] Get()
@@ -146,28 +141,28 @@ class StatusCakeTest
         $this.Validate();
         
         # does it exist?
-        $checkId = $this.GetApiResponse("/Tests/", "Get", $null) | ? {$_.WebsiteName -eq $this.Name} | Select -expand TestId
+        $checkId = $this.GetApiResponse("/Tests/", "GET", $null) | Where-Object {$_.WebsiteName -eq $this.Name} | Select-Object -expand TestId
         $returnobject = [StatusCakeTest]::new()      
 
         # need a check here for duped by name
-        if($checkId -is [Array])
+        if(($checkId | Measure-Object | Select -expand Count) -gt 1)
         {
             throw "Multiple Ids found with the same name. StatusCakeDSC uses Test Name as a unique key, and cannot continue"
         }
 
-        if(-not $checkId)
+        if(($checkId | Measure-Object | Select -expand Count) -le 0)
         {
             Write-Verbose "Looks like our check doesn't exist"
-            # check doesn't exist 
-            $this.TestID = $null            
+            # check doesn't exist      
             $returnObject.Ensure = [Ensure]::Absent
-            $returnobject.TestID = $null
             $returnobject.Name = $this.Name
             $returnobject.URL = $this.URL
             $returnobject.CheckRate = $this.checkrate
             $returnobject.Paused = $this.Paused
             $returnobject.ContactGroup = $this.ContactGroup
             $returnobject.ContactGroupID = $this.ResolveContactGroups($this.contactGroup)
+            $returnobject.TestID = 0 # null misbehaves
+            #$this.TestID = 0
         }
         else
         {
@@ -179,17 +174,17 @@ class StatusCakeTest
             $returnobject.URL = $testDetails.URI
             $returnobject.CheckRate = $testdetails.CheckRate
             $returnobject.Paused = $testdetails.paused 
-            $returnobject.ContactGroup = $testDetails.ContactGroups | select -expand Name
-            $returnobject.ContactGroupID = $testdetails.ContactGroups | select -expand ID
+            $returnobject.ContactGroup = $testDetails.ContactGroups | select-object -expand Name
+            $returnobject.ContactGroupID = $testdetails.ContactGroups | select-object -expand ID
             $returnObject.TestID = $CheckID
-            $this.TestID = $CheckID
+            #$this.TestID = $CheckID
         }
         return $returnobject 
     }
 
-    [Object] GetApiResponse($stem, $method = 'GET', $body = $null)
+    [Object] GetApiResponse($stem, $method, $body)
     {
-        if($body -ne $null)
+        if($null -ne $body)
         {
             Write-Verbose ($body | convertto-json -depth 4)
         }
@@ -204,23 +199,25 @@ class StatusCakeTest
             }
             else
             {
-                $creds = gc "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.creds" | ConvertFrom-Json 
+                $creds = Get-Content "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.creds" | ConvertFrom-Json 
 
                 $this.ApiKey = $creds.ApiKey
                 $this.UserName = $creds.UserName
             }
         }
+
         if($method -ne 'GET')
         {
-            return irm "https://app.statuscake.com/API$stem" `
+            $httpresponse = Invoke-RestMethod "https://app.statuscake.com/API$stem" `
                 -method $method -body $body -headers @{API = $this.ApiKey; username = $this.UserName} `
-                -ContentType "application/x-www-form-urlencoded"
+                -ContentType "application/x-www-form-urlencoded" 
         }
         else
         {
-            return irm "https://app.statuscake.com/API$stem" `
+            $httpresponse =  Invoke-RestMethod "https://app.statuscake.com/API$stem" `
                 -method GET -headers @{API = $this.ApiKey; username = $this.UserName}                 
         }
+        return $httpresponse
     }
 
     [int[]] ResolveContactGroups($cgNames)
@@ -228,15 +225,15 @@ class StatusCakeTest
         Write-Verbose "Resolving Contact Groups"
         $groups = $this.GetApiResponse("/ContactGroups", 'GET', $null)
         $r = @()
-        $cgNames | % {
+        $cgNames | ForEach-Object {
             Write-Verbose ("Resolving group name " + $_)
-            $r += ($groups | ? { $_.GroupName -eq $_ } | Select -expand ContactID)
+            $r += ($groups | Where-Object { $_.GroupName -eq $_ } | Select-Object -expand ContactID)
         }
         Write-Verbose ("Found Contact Groups " + ($r -join ","))
         return $r
     }
 
-    [Object] GetObjectToPost($tid, $cid)
+    [Object] GetObjectToPost([int]$TestID, [int]$ContactGroupID)
     {
         $p = 0
         if($this.Paused -eq $true)
@@ -245,7 +242,7 @@ class StatusCakeTest
         }
 
         # mandatories
-        $r = @{
+        $r = @{  # hashtable
             WebsiteName = $this.Name
             WebsiteURL = $this.URL
             CheckRate = $this.CheckRate
@@ -254,18 +251,17 @@ class StatusCakeTest
         }
         
         # optionals
-        if($cid -ne $null)
+        if($ContactGroupID)
         {
             Write-Verbose "Adding Contact group to post object"
-            $r | Add-Member -MemberType NoteProperty -Name ContactGroup -Value ($cid -join ",")
+            $r.add("ContactGroup", ($ContactGroupID -join ","))
         }
         
-        if($tid -ne 0)
+        if($TestID -ne 0)
         {
             Write-Verbose "Adding a checkID to post object, as we're updating"
-            $r | Add-Member -MemberType NoteProperty -Name TestID -Value $tid
+            $r.add("TestID", $TestID)
         }
-
         return $r
     }
 }

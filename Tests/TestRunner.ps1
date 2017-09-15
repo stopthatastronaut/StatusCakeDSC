@@ -3,7 +3,26 @@ param([switch]$EnableExit)
 
 ipmo pester
 
-# async test runner
+# async test runner, because of DSC caching
+
+Import-Module PSScriptAnalyzer
+
+<#
+$excludedRules = @(
+    'PSUseShouldProcessForStateChangingFunctions', 
+    'PSUseSingularNouns', 
+    'PSAvoidUsingConvertToSecureStringWithPlainText'
+    ) 
+#>
+
+<#
+$results = Invoke-ScriptAnalyzer ./Modules -recurse # -exclude $excludedRules
+
+Write-Output $results
+Write-Output "PSScriptAnalyzer found $($results.length) issues"
+Write-Host 
+#>
+
 
 function Invoke-PesterJob
 {
