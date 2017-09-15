@@ -66,13 +66,13 @@ class StatusCakeTest
             {
                 # we need to create it                
                 Write-Verbose ("Creating Test " + $this.Name)
-                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost(0, $this.ContactGroupID))
+                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost(0, $this.ResolveContactGroups($this.contactGroup)))
             }
             else
             {
                 # we need to update it
                 Write-Verbose ("Updating Test " + $this.Name)
-                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost($refObject.TestId, $this.ContactGroupID))
+                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost($refObject.TestId, $this.ResolveContactGroups($this.contactGroup)))
             }
         }
         Write-Verbose ("Status returned from API: " + ($status | ConvertTo-json -depth 4))
@@ -233,7 +233,7 @@ class StatusCakeTest
         return $r
     }
 
-    [Object] GetObjectToPost([int]$TestID, [int]$ContactGroupID)
+    [Object] GetObjectToPost([int]$TestID, [int[]]$ContactGroupID)
     {
         $p = 0
         if($this.Paused -eq $true)
