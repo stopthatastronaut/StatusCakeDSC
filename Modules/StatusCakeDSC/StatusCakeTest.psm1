@@ -251,7 +251,7 @@ class StatusCakeTest
         }
         
         # optionals
-        if($ContactGroupID)
+        if($ContactGroupID.length -gt 0)
         {
             Write-Verbose "Adding Contact group to post object"
             $r.add("ContactGroup", ($ContactGroupID -join ","))
