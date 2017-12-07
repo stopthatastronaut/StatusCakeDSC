@@ -42,14 +42,14 @@ class StatusCakeContactGroup
 
         if($this.Ensure -eq "Absent")
         {
-            # we neded to delete it"
+            # we needed to delete it"
             Write-Verbose ("Deleting Contact Group " + $this.ContactID)
             $status = $this.GetApiResponse(('/ContactGroups/Update/?ContactID=' + $this.ContactID), "DELETE", $null)
         }
         else
         {
             # we either need to create or update
-            if($this.ContactID -eq $null)
+            if($refObject.ContactID -eq $null)
             {
                 #create
                 Write-Verbose ("Creating Contact Group " + $this.GroupName)
@@ -128,7 +128,6 @@ class StatusCakeContactGroup
         # does it exist?
         $scContact = $this.GetApiResponse("/ContactGroups/", "GET", $null) | ? { $_.Groupname -eq $this.GroupName }
         $returnobject = [StatusCakeContactGroup]::new()
-
         
         if($sccontact -ne $null)
         {
