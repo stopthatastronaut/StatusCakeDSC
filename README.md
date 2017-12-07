@@ -22,6 +22,12 @@ iex ([WebClient].DownloadString("https://githubusercontent.com/stopthatastronaut
 
 `Get-DSCResource -modulename StatusCakeDSC`
 
+## Installing via PSGallery
+
+The excellent [CVandal](https://github.com/cvandal) has added PSGallery publishing to the resource, so you should be able to insall the resource using `Install-Module StatusCakeDSC`
+
+`Get-DSCResource -modulename StatusCakeDSC`
+
 ## How to use
 
 The quick start:
@@ -90,6 +96,10 @@ or you can create a `.creds` file in the same location as the Module, with the f
 ```
 
 Using the `.creds` option does not support multiple StatusCake accounts at this time. We recommend you don't commit credentials to public source control, naturally.
+
+## A note on API keys and rate limits
+
+At the time of writing (Dec 2017), Statuscake free accounts have rate limiting applied which makes the resource misbehave, throwing 500 errors. Paid accounts have no such limitation. We'll update this readme if and when that changes.
 
 ## Testing
 
