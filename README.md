@@ -26,8 +26,6 @@ iex ([WebClient].DownloadString("https://githubusercontent.com/stopthatastronaut
 
 The excellent [CVandal](https://github.com/cvandal) has added PSGallery publishing to the resource, so you should be able to insall the resource using `Install-Module StatusCakeDSC`
 
-`Get-DSCResource -modulename StatusCakeDSC`
-
 ## How to use
 
 The quick start:
