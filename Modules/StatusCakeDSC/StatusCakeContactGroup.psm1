@@ -231,7 +231,7 @@ class StatusCakeContactGroup
         if($contactID -ne 0)
         {
             $r | Add-Member -MemberType NoteProperty -Name ContactID -Value $contactID    
-            Write-Verbose "Adding COntactID: $contactID to outgoing body"        
+            Write-Verbose "Adding ContactID: $contactID to outgoing body"        
         }
         return $r
     }
