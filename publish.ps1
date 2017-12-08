@@ -5,7 +5,7 @@ param (
 
 if (!(Test-Path -Path "$NuGetPath\nuget.exe")) {
     if (!(Test-Path -Path $NuGetPath)) {
-        New-Item -ItemType "Directory" -Path $NuGetPath | Out-Null
+        New-Item -ItemType "Directory" -Path $NuGetPath -force | Out-Null
     }
 
     Write-Output "Downloading the NuGet Executable..."
