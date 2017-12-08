@@ -49,7 +49,7 @@ class StatusCakeContactGroup
         else
         {
             # we either need to create or update
-            if($refObject.ContactID -eq $null)
+            if($refObject.ContactID -eq 0)
             {
                 #create
                 Write-Verbose ("Creating Contact Group " + $this.GroupName)
@@ -128,6 +128,11 @@ class StatusCakeContactGroup
         # does it exist?
         $scContact = $this.GetApiResponse("/ContactGroups/", "GET", $null) | ? { $_.Groupname -eq $this.GroupName }
         $returnobject = [StatusCakeContactGroup]::new()
+
+        if(($scContact | measure | select -expand Count) -gt 1)
+        {            
+            throw "Multiple Ids found with the same name. StatusCakeDSC uses Test Name as a unique key, and cannot continue"
+        }
         
         if($sccontact -ne $null)
         {
@@ -149,9 +154,15 @@ class StatusCakeContactGroup
             # it does not exist in Statuscake
             Write-verbose "I found no contact group with this name in StatusCake"
             $returnObject.Ensure = [Ensure]::Absent
-            # everything else can be null or default, I think
+            $returnObject.ContactID = 0  # null is known to misbehave, so let's set this to 0
+            $returnobject.GroupName = $this.GroupName
+            $returnObject.Email = $this.Email
+            $returnObject.Boxcar = $this.Boxcar
+            $returnObject.DesktopAlert = $this.DesktopAlert
+            $returnobject.mobile = $this.mobile
+            $returnobject.Pushover = $this.Pushover
+            $returnobject.PingUrl = $this.PingUrl
         }
-
         
         return $this 
     }
