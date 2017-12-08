@@ -4,7 +4,7 @@ ipmo Pester
 iex (gc .\Modules\StatusCakeDSC\StatusCakeContactGroup.psm1 -raw)
 
 Describe "Object and Properties" {
-
+    # inspect the object here
 }
 
 Describe "The statuscakecontactgroup HTTP bits" {
