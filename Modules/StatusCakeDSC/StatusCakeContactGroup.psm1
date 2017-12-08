@@ -43,7 +43,7 @@ class StatusCakeContactGroup
         if($this.Ensure -eq "Absent")
         {
             # we needed to delete it"
-            Write-Verbose ("Deleting Contact Group " + $this.ContactID)
+            Write-Verbose ("Deleting Contact Group " + $refObject.ContactID)
             $status = $this.GetApiResponse(('/ContactGroups/Update/?ContactID=' + $this.ContactID), "DELETE", $null)
         }
         else
@@ -58,9 +58,11 @@ class StatusCakeContactGroup
             else
             {
                 # modify
-                Write-Verbose ("Modifying Contact Group " + $this.ContactID)
-                $status = $this.GetApiResponse(('/ContactGroups/Update/?ContactID=' + $this.ContactID), "PUT", $this.GetObjectToPost($this.ContactID))
+                Write-Verbose ("Modifying Contact Group " + $refObject.ContactID)
+                $status = $this.GetApiResponse(('/ContactGroups/Update/?ContactID=' + $this.ContactID), "PUT", $this.GetObjectToPost($refObject.ContactID))
             }
+
+            $status 
         }
     }        
     
@@ -164,7 +166,7 @@ class StatusCakeContactGroup
             $returnobject.PingUrl = $this.PingUrl
         }
         
-        return $this 
+        return $returnobject
     }
 
     [Object] GetApiResponse($stem, $method = 'GET', $body = $null)
@@ -190,17 +192,25 @@ class StatusCakeContactGroup
                 $this.UserName = $creds.UserName
             }
         }
+
         if($method -ne 'GET')
         {
-            return irm "https://app.statuscake.com/API$stem" `
+            $httpresponse = irm "https://app.statuscake.com/API$stem" `
                 -method $method -body $body -headers @{API = $this.ApiKey; username = $this.UserName} `
-                -ContentType "application/x-www-form-urlencoded"
+                -ContentType "application/x-www-form-urlencoded" `
+                -MaximumRedirection 0
         }
         else
         {
-            return irm "https://app.statuscake.com/API$stem" `
+            $httpresponse = irm "https://app.statuscake.com/API$stem" `
                 -method GET -headers @{API = $this.ApiKey; username = $this.UserName}                 
         }
+
+        if(($httpresponse.issues | measure | select -expand Count) -gt 0 ) {
+            throw ($httpresponse.Issues | out-string)
+        }
+
+        return $httpresponse
     }
 
     [Object] GetObjectToPost($contactID)

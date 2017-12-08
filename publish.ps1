@@ -12,18 +12,29 @@ if (!(Test-Path -Path "$NuGetPath\nuget.exe")) {
     (New-Object System.Net.WebClient).DownloadFile("https://nuget.org/nuget.exe", "$NuGetPath\nuget.exe")
 }
 
-# find the current version
-$ver = [version](Find-Module StatusCakeDSC | Select -expand version)
+# find the current published version
+$pver = [version](Find-Module StatusCakeDSC | Select -expand version)
 
-$newversion = [version]("" + $ver.Major + "." + ($ver.Minor + 1) + "")
+# find the current manifest version
+
+$mver = (iex (gc .\Modules\StatusCakeDSC\StatusCakeDSC.psd1 -raw)) | ? {$_.Name -eq "ModuleVersion"} | select -expand Value
 
 
+if($mver -gt $pver)
+{
 
-Write-Output "Installing the NuGet Package Provider..."
-Install-PackageProvider -Name "NuGet" -MinimumVersion "2.8.5.201" -Force -Verbose
+    Write-Output "Version has incremented. Publishing to PSGallery"
 
-Write-Output "Trusting the PSGallery Repository..."
-Set-PSRepository -Name "PSGallery" -InstallationPolicy "Trusted" -Verbose
+    Write-Output "Installing the NuGet Package Provider..."
+    Install-PackageProvider -Name "NuGet" -MinimumVersion "2.8.5.201" -Force -Verbose
 
-Write-Output "Publishing the StatusCakeDSC Module..."
-Publish-Module -Path "./Modules/StatusCakeDSC" -NuGetApiKey $NuGetApiKey -verbose # -FormatVersion $newversion 
+    Write-Output "Trusting the PSGallery Repository..."
+    Set-PSRepository -Name "PSGallery" -InstallationPolicy "Trusted" -Verbose
+
+    Write-Output "Publishing the StatusCakeDSC Module..."
+    Publish-Module -Path "./Modules/StatusCakeDSC" -NuGetApiKey $NuGetApiKey -verbose # -FormatVersion $newversion 
+
+}
+else {
+    Write-Output "Version not incremented, declining to publish"
+}
