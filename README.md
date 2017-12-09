@@ -108,3 +108,11 @@ They also expect two contact groups to exist, called "stopthatastronaut" and "st
 ## Contribs/Reporting bugs
 
 Feel free to submit PRs or bug reports via Github. I don't bite. Much.
+
+## Publishing to the PS Gallery
+
+This Module has Continuous Publishing configured via Octopus Deploy.
+
+Any commit on `master` will trigger and [Octopus Deploy](https://deploy.d.evops.co/) instance using [TakoFukku](https://github.com/stopthatastronaut.com/Takofukku). That instance will run tests and, if successful, run a publishing step.
+
+The publishing step checks the latest version available on PS Gallery, and compares that to the version in StatusCakeDSC.psd1. If the manifest version is higher than the published version, Octopus then attempts to publish the new version to the Gallery, and tries to tag the commit on github. Be aware that incrementing the version will attempt to publish the module immediately.

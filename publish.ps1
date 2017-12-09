@@ -34,6 +34,9 @@ if($mver -gt $pver)
     Write-Output "Publishing the StatusCakeDSC Module..."
     Publish-Module -Path "./Modules/StatusCakeDSC" -NuGetApiKey $NuGetApiKey -verbose # -FormatVersion $newversion 
 
+    git tag -a "$mver" -m "Version $mver release"
+    git push --tags
+
 }
 else {
     Write-Output "Version not incremented, declining to publish"
