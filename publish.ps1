@@ -16,9 +16,7 @@ if (!(Test-Path -Path "$NuGetPath\nuget.exe")) {
 $pver = [version](Find-Module StatusCakeDSC | Select-Object -expand version)
 
 # find the current manifest version
-
 $mver = (Import-PowerShellDataFile .\Modules\StatusCakeDSC\StatusCakeDSC.psd1).ModuleVersion
-
 
 if($mver -gt $pver)
 {
@@ -31,8 +29,13 @@ if($mver -gt $pver)
     Write-Output "Trusting the PSGallery Repository..."
     Set-PSRepository -Name "PSGallery" -InstallationPolicy "Trusted" -Verbose
 
+    # TODO: gather release notes, publish with notes
+
     Write-Output "Publishing the StatusCakeDSC Module..."
-    Publish-Module -Path "./Modules/StatusCakeDSC" -NuGetApiKey $NuGetApiKey -verbose # -FormatVersion $newversion 
+    Publish-Module -Path "./Modules/StatusCakeDSC" -NuGetApiKey $NuGetApiKey -verbose 
+
+    git config --global user.email "octopus@d.evops.co" 
+    git config --global user.name "Octopus - deploy.d.evops.co" 
 
     git tag -a "$mver" -m "Version $mver release"
     git push --tags
