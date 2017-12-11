@@ -17,7 +17,7 @@ $pver = [version](Find-Module StatusCakeDSC | Select-Object -expand version)
 
 # find the current manifest version
 
-$mver = (Import-PowerShellDataFile .\Modules\StatusCakeDSC\StatusCakeDSC.psd1)
+$mver = (Import-PowerShellDataFile .\Modules\StatusCakeDSC\StatusCakeDSC.psd1).ModuleVersion
 
 
 if($mver -gt $pver)
