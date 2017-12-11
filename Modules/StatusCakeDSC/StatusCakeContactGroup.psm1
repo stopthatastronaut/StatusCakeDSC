@@ -128,10 +128,10 @@ class StatusCakeContactGroup
     [StatusCakeContactGroup] Get()
     {    
         # does it exist?
-        $scContact = $this.GetApiResponse("/ContactGroups/", "GET", $null) | ? { $_.Groupname -eq $this.GroupName }
+        $scContact = $this.GetApiResponse("/ContactGroups/", "GET", $null) | Where-Object { $_.Groupname -eq $this.GroupName }
         $returnobject = [StatusCakeContactGroup]::new()
 
-        if(($scContact | measure | select -expand Count) -gt 1)
+        if(($scContact | Measure-Object | Select-Object -expand Count) -gt 1)
         {            
             throw "Multiple Ids found with the same name. StatusCakeDSC uses Test Name as a unique key, and cannot continue"
         }
@@ -186,7 +186,7 @@ class StatusCakeContactGroup
             }
             else
             {
-                $creds = gc "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.creds" | ConvertFrom-Json 
+                $creds = Get-Content "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.creds" | ConvertFrom-Json 
 
                 $this.ApiKey = $creds.ApiKey
                 $this.UserName = $creds.UserName
@@ -195,18 +195,18 @@ class StatusCakeContactGroup
 
         if($method -ne 'GET')
         {
-            $httpresponse = irm "https://app.statuscake.com/API$stem" `
+            $httpresponse = Invoke-RestMethod "https://app.statuscake.com/API$stem" `
                 -method $method -body $body -headers @{API = $this.ApiKey; username = $this.UserName} `
                 -ContentType "application/x-www-form-urlencoded" `
                 -MaximumRedirection 0
         }
         else
         {
-            $httpresponse = irm "https://app.statuscake.com/API$stem" `
+            $httpresponse = Invoke-RestMethod "https://app.statuscake.com/API$stem" `
                 -method GET -headers @{API = $this.ApiKey; username = $this.UserName}                 
         }
 
-        if(($httpresponse.issues | measure | select -expand Count) -gt 0 ) {
+        if(($httpresponse.issues | Measure-Object | Select-Object -expand Count) -gt 0 ) {
             throw ($httpresponse.Issues | out-string)
         }
 

@@ -25,16 +25,16 @@ if(!(Test-Path $targetpath))
 else
 {
     # first, check if we need to install it at all by comparing hashes
-    $hashfile = Invoke-UTF8WebRequest -uri ($rawfilehost, "hashes.json" -join "") | select -expand Content
+    $hashfile = Invoke-UTF8WebRequest -uri ($rawfilehost, "hashes.json" -join "") | Select-Object -expand Content
     $hashobject = $hashfile | ConvertFrom-Json
 
-    $hashobject | % {
+    $hashobject | ForEach-Object {
         $needsupdating = $false # assume it doesn't need updating
         $targetfile = ($targetpath, $_.FileName -join "\")
         if(Test-Path $targetfile)
         {
             # file exists. check hash
-            $localhash = Get-FileHash $targetfile -Algorithm SHA256 | select -expand Hash
+            $localhash = Get-FileHash $targetfile -Algorithm SHA256 | Select-Object -expand Hash
             if($localhash -ne $_.Hash.Hash)
             {
                 $needsupdating = $true
@@ -48,7 +48,7 @@ else
 
         if($needsupdating)
         {
-            Invoke-UTF8WebRequest -uri ("$rawfilehost", $_.FileName -join "") | select -expand Content | Out-File ($targetpath, $_.FileName -join "\") -verbose
+            Invoke-UTF8WebRequest -uri ("$rawfilehost", $_.FileName -join "") | Select-Object -expand Content | Out-File ($targetpath, $_.FileName -join "\") -verbose
         }
     }
 }

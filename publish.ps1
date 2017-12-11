@@ -13,11 +13,11 @@ if (!(Test-Path -Path "$NuGetPath\nuget.exe")) {
 }
 
 # find the current published version
-$pver = [version](Find-Module StatusCakeDSC | Select -expand version)
+$pver = [version](Find-Module StatusCakeDSC | Select-Object -expand version)
 
 # find the current manifest version
 
-$mver = [version]((iex (gc .\Modules\StatusCakeDSC\StatusCakeDSC.psd1 -raw)).ModuleVersion)
+$mver = (Import-PowerShellDataFile .\Modules\StatusCakeDSC\StatusCakeDSC.psd1)
 
 
 if($mver -gt $pver)

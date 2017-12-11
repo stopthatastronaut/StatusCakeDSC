@@ -1,7 +1,7 @@
 ﻿# https://hodgkins.io/five-tips-for-writing-dsc-resources-in-powershell-version-5
 param([switch]$EnableExit)
 
-ipmo pester
+Import-Module pester
 
 # async test runner, because of DSC caching
 
