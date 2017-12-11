@@ -1,7 +1,7 @@
-ipmo Pester
+Import-Module Pester
 
 # load it into memory
-iex (gc .\Modules\StatusCakeDSC\StatusCakeTest.psm1 -raw)
+Invoke-Expression (gc .\Modules\StatusCakeDSC\StatusCakeTest.psm1 -raw)
 
 # generate a unique key for our test check
 $uniquekey = ((1..9) | get-Random -Count 6) -join ""
@@ -87,7 +87,7 @@ Describe "The statuscaketest bits" {
     Start-Sleep -Seconds 5
 
     It "should not have the test we just created" {
-        $sccg.GetApiResponse("/Tests/", "GET", $null) | ? { $_.WebSiteName -eq $NewTestName } | Should Be $null
+        $sccg.GetApiResponse("/Tests/", "GET", $null) | Where-Object { $_.WebSiteName -eq $NewTestName } | Should Be $null
     }
 }
 
