@@ -13,10 +13,8 @@ class StatusCakeTest
     [DscProperty(Key)]
     [string]$Name
     
-    [DscProperty()]   # if these two are unset, it will look for a .creds file in the module directory
-    [string] $ApiKey
-    [DscProperty()]
-    [string] $UserName
+    [DScProperty()]
+    [PSCredential] $ApiCredential = [PSCredential]::Empty
 
     [DscProperty()]
     [string] $URL
@@ -28,9 +26,7 @@ class StatusCakeTest
     [DscProperty()]
     [int] $Timeout
     [DscProperty()]
-    [string] $BasicUser = $null
-    [DscProperty()]
-    [string] $BasicPass = $null
+    [PSCredential]$BasicCredential = [PSCredential]::Empty
     [DscProperty()]
     [bool] $Public
     [DscProperty()]
@@ -122,17 +118,7 @@ class StatusCakeTest
             throw "Checkrate cannot be zero or negative"
         }
 
-        # if basic user, need basicpass and vice versa
-
-        if(($this.BasicUser) -and (-not $this.BasicPass))
-        {
-            throw "If specifying basic user, you must also include a password"
-        }
-
-        if((-not $this.BasicUser) -and ($this.BasicPass))
-        {
-            throw "If specifying a basic password, you must also specify a username"
-        }
+        
     }
 
     [StatusCakeTest] Get()
@@ -190,36 +176,41 @@ class StatusCakeTest
         }
 
         $creds = @{}
-        if(-not $this.ApiKey)
+        if($this.ApiCredential -eq [PSCredential]::Empty)
         {
             # no Api Key provided, grab 'em off the disk
-            if(-not (Test-Path "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.creds" ))
+            if(-not (Test-Path "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.securecreds" ))
             {
                 throw "No credentials specified and no .creds file found"
             }
             else
             {
-                $creds = Get-Content "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.creds" | ConvertFrom-Json 
+                $creds = Get-Content "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.securecreds" | ConvertFrom-Json 
 
-                $this.ApiKey = $creds.ApiKey
-                $this.UserName = $creds.UserName
+                $secapikey = ConvertTo-SecureString $creds.ApiKey 
+                $this.ApiCredential = [PSCredential]::new($creds.UserName, $secapikey)
             }
+        }
+
+        $headers = @{
+            API = $this.ApiCredential.GetNetworkCredential().Password; 
+            username = $this.ApiCredential.UserName
         }
 
         if($method -ne 'GET')
         {
             $httpresponse = Invoke-RestMethod "https://app.statuscake.com/API$stem" `
-                -method $method -body $body -headers @{API = $this.ApiKey; username = $this.UserName} `
+                -method $method -body $body -headers $headers `
                 -ContentType "application/x-www-form-urlencoded" 
         }
         else
         {
             $httpresponse =  Invoke-RestMethod "https://app.statuscake.com/API$stem" `
-                -method GET -headers @{API = $this.ApiKey; username = $this.UserName}                 
+                -method GET -headers $headers               
         }
         # if the issues array is not empty, we should throw here. probably
 
-        if(($httpresponse.issues | measure | select -expand Count) -gt 0 ) {
+        if(($httpresponse.issues | measure-object | select-object -expand Count) -gt 0 ) {
             throw ($httpresponse.Issues | out-string)
         }
 
@@ -261,6 +252,13 @@ class StatusCakeTest
         {
             Write-Verbose "Adding Contact group to post object"
             $r.add("ContactGroup", ($ContactGroupID -join ","))
+        }
+
+        if($this.BasicCredential -ne [PSCredential]::Empty)
+        {
+            Write-Verbose "Adding Basic Password and user"
+            $r.Add("BasicUser", $this.BasicCredential.UserName)
+            $r.Add("BasicPass", $this.BasicCredential.GetNetworkCredential().Password)
         }
         
         if($TestID -ne 0)

@@ -14,10 +14,8 @@ class StatusCakeContactGroup
     [Ensure] $Ensure
     [DscProperty()]   
     
-    # if these two are unset, it will look for a .creds file in the module directory
-    [string] $apiKey
-    [DscProperty()]
-    [string] $UserName
+    [DScProperty()]
+    [PSCredential] $ApiCredential = [PSCredential]::Empty
         
     [DscProperty()]
     [bool] $DesktopAlert
@@ -177,33 +175,39 @@ class StatusCakeContactGroup
         }
 
         $creds = @{}
-        if(-not $this.ApiKey)
+        if($this.ApiCredential -eq [PSCredential]::Empty)
         {
             # no Api Key provided, grab 'em off the disk
-            if(-not (Test-Path "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.creds" ))
+            if(-not (Test-Path "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.securecreds" ))
             {
                 throw "No credentials specified and no .creds file found"
             }
             else
             {
-                $creds = Get-Content "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.creds" | ConvertFrom-Json 
+                $creds = Get-Content "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.securecreds" | ConvertFrom-Json 
 
-                $this.ApiKey = $creds.ApiKey
-                $this.UserName = $creds.UserName
+                # needs converting for secure creds
+                $secapikey = ConvertTo-SecureString $creds.ApiKey 
+                $this.ApiCredential = [PSCredential]::new($creds.UserName, $secapikey)
             }
         }
+
+        $headers = @{
+                API = $this.ApiCredential.GetNetworkCredential().Password; 
+                username = $this.ApiCredential.UserName;
+            }
 
         if($method -ne 'GET')
         {
             $httpresponse = Invoke-RestMethod "https://app.statuscake.com/API$stem" `
-                -method $method -body $body -headers @{API = $this.ApiKey; username = $this.UserName} `
+                -method $method -body $body -headers $headers `
                 -ContentType "application/x-www-form-urlencoded" `
                 -MaximumRedirection 0
         }
         else
         {
             $httpresponse = Invoke-RestMethod "https://app.statuscake.com/API$stem" `
-                -method GET -headers @{API = $this.ApiKey; username = $this.UserName}                 
+                -method GET -headers $headers                 
         }
 
         if(($httpresponse.issues | Measure-Object | Select-Object -expand Count) -gt 0 ) {

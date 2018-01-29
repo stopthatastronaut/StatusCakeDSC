@@ -1,4 +1,5 @@
 *.creds
+*.securecreds
 /scratch/
 /PSScriptAnalyzer.log
 /PSScriptAnalyzer.json
