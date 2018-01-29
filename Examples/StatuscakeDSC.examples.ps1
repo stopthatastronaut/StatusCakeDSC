@@ -1,4 +1,4 @@
-# assuming credentials are in a .creds file
+# assuming credentials are in a .securecreds file
 
 configuration StatusCakeDSCExample
 {
