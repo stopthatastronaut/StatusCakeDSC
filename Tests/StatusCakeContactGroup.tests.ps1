@@ -28,8 +28,6 @@ Describe "The statuscakecontactgroup HTTP bits" {
 
     }
 
-
-
     It "Can delete a contact group" {
         # $VerbosePreference = "Continue"
         $sccg2 = [StatusCakeContactGroup]::New() 

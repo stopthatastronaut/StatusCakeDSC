@@ -50,7 +50,7 @@ class StatusCakeTest
     {        
         $refObject = $this.Get()
 
-        if($this.Ensure -eq [Ensure]::Absent)
+        if($this.Ensure -eq [Ensure]::Absent -and $refObject.TestID -ne 0)
         {
             # we need to delete it"
             Write-Verbose ("Deleting Test " + $this.Name)

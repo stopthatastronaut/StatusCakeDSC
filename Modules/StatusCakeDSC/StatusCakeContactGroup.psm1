@@ -38,7 +38,7 @@ class StatusCakeContactGroup
     {
         $refObject = $this.Get()
 
-        if($this.Ensure -eq "Absent")
+        if($this.Ensure -eq "Absent" -and $refObject.ContactID -ne 0)
         {
             # we needed to delete it"
             Write-Verbose ("Deleting Contact Group " + $refObject.ContactID)
@@ -184,6 +184,7 @@ class StatusCakeContactGroup
             }
             else
             {
+                # needs a "find the creds file" function, I suspect
                 $creds = Get-Content "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.securecreds" | ConvertFrom-Json 
 
                 # needs converting for secure creds
