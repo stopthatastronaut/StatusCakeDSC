@@ -69,7 +69,13 @@ There will be further documentation available by running `Get-Help about_DSCReso
 
 ## Credentials
 
-You can either Specify UserName and ApiKey directly in your DSC configuration, with the following params
+NOTE: As of version 2.0, credentials are protected in PSCredential Objects 
+
+#### v1.x
+
+You can either Specify UserName and ApiKey directly in your DSC configuration, or you can use a locally-stored file (useful for testing).
+
+To pass your credentials in the normal way:
 
 ```
 StatusCakeContactGroup DevOpsGroup
@@ -84,7 +90,7 @@ StatusCakeContactGroup DevOpsGroup
 }
 ```
 
-or you can create a `.creds` file in the same location as the Module, with the following format
+To use the .creds option, you'll need a `.creds` file in the module's root directory, with the following content:
 
 ```
 {
@@ -93,7 +99,38 @@ or you can create a `.creds` file in the same location as the Module, with the f
 }
 ```
 
-Using the `.creds` option does not support multiple StatusCake accounts at this time. We recommend you don't commit credentials to public source control, naturally.
+Using the `.creds` option does not support multiple StatusCake accounts, and is best reserved for testing purposes. We recommend you don't commit credentials to public source control, naturally.
+
+#### v2+
+
+You can either Specify UserName and ApiKey directly in your DSC configuration, with the following params
+
+```
+$secureapikey = ConvertTo-SecureString "ASDFGHJKLOIUYTREW" -asplaintext -force # not recommended. See note below.
+$apicreds = [PSCredential]::new("ExampleUserName", $secureapikey)
+
+
+StatusCakeContactGroup DevOpsGroup
+{
+    Ensure = "present"
+    GroupName = "DevOpsEngineers"
+    Email = @("oncall1@organisation.com", "oncall2@organisation.com", "oncall3@organisation.com")
+    Mobile = "+1-111-1111"
+    PingUrl = "https://infra.organisation.com/statusping"
+    ApiCredential = $apicreds
+}
+```
+
+or you can create a `.securecreds` file in the same location as the Module, with the following format. The secure string will be decrypted with the local machine's default key (using `ConvertTo-SecureString`). Strings serialized with another key will fail here, so take care.
+
+```
+{
+    "ApiKey":  "serializedsecurestringrepresentationofyourapikey",
+    "UserName":  "ExampleUserName"
+}
+```
+
+More information on securing credentials with PSCredential Objects, see the [following link](https://docs.microsoft.com/en-us/powershell/dsc/securemof)
 
 ## A note on API keys and rate limits
 
@@ -101,9 +138,9 @@ At the time of writing (Dec 2017), Statuscake free accounts have rate limiting a
 
 ## Testing
 
-To run the full suite of automatic tests, you will need valid credentials for an Active Statuscake account, in a .creds file. There is a subset of tests that can run without, but for full functionality, you need them.
+To run the full suite of automatic tests, you will need valid credentials for an Active Statuscake account, in a .creds o .securecreds file. There is a subset of tests that can run without, but for full functionality, you need them.
 
-They also expect two contact groups to exist, called "stopthatastronaut" and "stopthatastronaut2". Change these to match your environment or add some groups to your environment
+They also expect two contact groups to exist, called "stopthatastronaut" and "stopthatastronaut2". Change these to match your environment or add some groups to your environment.
 
 ## Contribs/Reporting bugs
 
@@ -113,6 +150,6 @@ Feel free to submit PRs or bug reports via Github. I don't bite. Much.
 
 This Module has Continuous Publishing configured via Octopus Deploy.
 
-Any commit on `master` will trigger and [Octopus Deploy](https://deploy.d.evops.co/) instance using [TakoFukku](https://github.com/stopthatastronaut.com/Takofukku). That instance will run tests and, if successful, run a publishing step.
+Any commit on `master` will trigger an [Octopus Deploy](https://octopus.com/) instance using [TakoFukku](https://github.com/stopthatastronaut/Takofukku). That instance will run tests and, if successful, run a publishing step.
 
 The publishing step checks the latest version available on PS Gallery, and compares that to the version in StatusCakeDSC.psd1. If the manifest version is higher than the published version, Octopus then attempts to publish the new version to the Gallery, and tries to tag the commit on github. Be aware that incrementing the version will attempt to publish the module immediately.
