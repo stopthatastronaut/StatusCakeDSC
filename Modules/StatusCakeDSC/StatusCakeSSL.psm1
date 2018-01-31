@@ -59,7 +59,7 @@ class StatusCakeSSL
         if($this.Ensure -eq [Ensure]::Absent -and $refObject.id -ne 0)
         {
             # we need to delete it"
-            Write-Verbose ("Deleting Test " + $this.Name)
+            Write-Verbose ("Deleting Test " + $this.Name + " ID: " + $refObject.id)
             $status = $this.GetApiResponse(("/SSL/Update"), 'DELETE', @{'id' = $refObject.id})
         }
         else
