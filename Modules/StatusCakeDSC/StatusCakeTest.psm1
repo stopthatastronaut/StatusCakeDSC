@@ -36,8 +36,14 @@ class StatusCakeTest
     [string] $TestType = 'HTTP'
     [DscProperty()]
     [string] $FindString
-    [DScProperty()]
+    [DscProperty()]
     [string[]] $ContactGroup
+    
+    # premium features
+    [DscProperty()]
+    [int] $AlertDelayRate = 5  # maps to TriggerRate on the API. default 5, min 0,  max 100. How many minutes to wait before sending an alert
+    [DscProperty()]
+    [int] $ConfirmationServers = 5  # maps to 'Confirmation' on the API. min 1 max 9. default varies by plan, I think
 
 
     [DscProperty(NotConfigurable)]
@@ -97,9 +103,25 @@ class StatusCakeTest
             $testOK = $false
         }
 
-        if($this.ContactGroup -ne $refObject.ContactGroup)
+        if( (Compare-Object $this.ContactGroup $refObject.ContactGroup) -ne $null)   # this is an array. we need to compare it like an array
         {
-            Write-Verbose "Contact Groups have Changed"
+            Write-Verbose "Contact Groups have changed"
+            Write-Verbose "Contact Group here: " 
+            Write-Verbose ($this.ContactGroup -join ",")
+            Write-Verbose "Contact Group there: " 
+            Write-Verbose ($refObject.ContactGroup -join ",")
+            $testOK = $false
+        }
+
+        if($this.ConfirmationServers -ne $refobject.ConfirmationServers)
+        {
+            Write-Verbose "ConfirmationServers has changed"
+            $testOK = $false
+        }
+
+        if($this.AlertDelayRate -ne $refobject.AlertDelayRate)
+        {
+            Write-Verbose "AlertDelayRate has changed"
             $testOK = $false
         }
 
@@ -148,6 +170,8 @@ class StatusCakeTest
             $returnobject.ContactGroup = $this.ContactGroup
             $returnobject.ContactGroupID = $this.ResolveContactGroups($this.contactGroup)
             $returnobject.TestID = 0 # null misbehaves
+            $returnobject.AlertDelayRate = $this.AlertDelayRate
+            $returnobject.ConfirmationServers = $this.ConfirmationServers
             #$this.TestID = 0
         }
         else
@@ -158,11 +182,13 @@ class StatusCakeTest
             $returnObject.Ensure = [Ensure]::Present
             $returnobject.Name = $this.Name
             $returnobject.URL = $testDetails.URI
-            $returnobject.CheckRate = $testdetails.CheckRate
+            $returnobject.CheckRate = [int]$testdetails.CheckRate
             $returnobject.Paused = $testdetails.paused 
             $returnobject.ContactGroup = $testDetails.ContactGroups | select-object -expand Name
             $returnobject.ContactGroupID = $testdetails.ContactGroups | select-object -expand ID
             $returnObject.TestID = $CheckID
+            $returnobject.AlertDelayRate = [int]$testDetails.TriggerRate
+            $returnobject.ConfirmationServers = [int]$testDetails.Confirmation
             #$this.TestID = $CheckID
         }
         return $returnobject 
@@ -245,6 +271,8 @@ class StatusCakeTest
             CheckRate = $this.CheckRate
             TestType = $this.TestType
             Paused = $p
+            Confirmation = $this.ConfirmationServers
+            TriggerRate = $this.AlertDelayRate
         }
         
         # optionals

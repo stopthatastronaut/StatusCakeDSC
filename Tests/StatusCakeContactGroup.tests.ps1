@@ -1,7 +1,7 @@
-ipmo Pester
+Import-Module Pester
 
 # load it into memory
-iex (gc .\Modules\StatusCakeDSC\StatusCakeContactGroup.psm1 -raw)
+Invoke-Expression (gc .\Modules\StatusCakeDSC\StatusCakeContactGroup.psm1 -raw)
 
 Describe "Object and Properties" {
     # inspect the object here
