@@ -34,7 +34,7 @@ if($mver -gt $pver)
     Write-Output "Publishing the StatusCakeDSC Module..."
     Publish-Module -Path "./Modules/StatusCakeDSC" -NuGetApiKey $NuGetApiKey -verbose 
 
-    git config --global user.email "octopus@d.evops.co" 
+    git config --global user.email "stopthatastronaut@gail.com" 
     git config --global user.name "Octopus - deploy.d.evops.co" 
 
     git tag -a "$mver" -m "Version $mver release"
@@ -44,3 +44,5 @@ if($mver -gt $pver)
 else {
     Write-Output "Version not incremented, declining to publish"
 }
+
+exit 0   # so Octopus exist correctly

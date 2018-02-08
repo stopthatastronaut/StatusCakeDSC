@@ -169,7 +169,7 @@ class StatusCakeSSL
         {
             $CheckContactGroupId = $this.ResolveContactGroups($this.contactGroup)    
             if ($($CheckContactGroupId.count) -eq 0){
-                throw "You have specified a contact group that does't exist, cannot proceed."
+                throw "You have specified a contact group that doesn't exist, cannot proceed."
             }
         }
         write-verbose "Finishing Validation" 

@@ -33,10 +33,12 @@ Describe "The StatusCakeSSL bits" {
             $sccg.SecondReminderInDays  = 6
             $sccg.FinalReminderInDays   = 1
             $sccg.ContactGroup          = @("ContactGroupThatDoesntExist")
-            $sccg.get() } | Should throw "You have specified a contact group that does't exist, cannot proceed."
+            $sccg.get() } | Should throw "You have specified a contact group that doesn't exist, cannot proceed."
 
             # we expect this to throw an error, but we check the stack for errors later. Remove the most recent.
-            if($error[0] -like "You have specified a contact*")
+            
+
+            if($error[0] -like "You have specified a contact group that*")
             {
                 $error.RemoveAt(0)
             }
