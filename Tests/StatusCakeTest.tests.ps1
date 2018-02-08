@@ -7,7 +7,7 @@ Invoke-Expression (Get-Content .\Modules\StatusCakeDSC\StatusCakeTest.psm1 -raw)
 $uniquekey = ((1..9) | Get-Random -Count 6) -join ""
 
 # make everything verbose
-$PSDefaultParameterValues['*:Verbose'] = $true
+# $PSDefaultParameterValues['*:Verbose'] = $true
 
 Describe "Object and properties" {
 
@@ -17,7 +17,7 @@ Describe "The statuscaketest bits" {
     $sccg = [StatusCakeTest]::New()   
 
     $NewTestName = "Pester Test $uniquekey"
-    Write-Warning "New Test name is $NewTestName"
+    Write-Output "New Test name is $NewTestName"
 
     It "Can resolve a ContactGroup called 'stopthatastronaut'" {
 
@@ -105,4 +105,4 @@ Describe "The statuscaketest bits" {
 
 
 # remove the verbose preference, for test troubleshooting
-$PSDefaultParameterValues.Remove('*:Verbose')
+# $PSDefaultParameterValues.Remove('*:Verbose')
