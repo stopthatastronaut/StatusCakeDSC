@@ -207,7 +207,7 @@ class StatusCakeTest
             # no Api Key provided, grab 'em off the disk
             if(-not (Test-Path "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.securecreds" ))
             {
-                throw "No credentials specified and no .creds file found"
+                throw "No credentials specified and no .securecreds file found"
             }
             else
             {
