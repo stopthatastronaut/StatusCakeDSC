@@ -203,7 +203,7 @@ class StatusCakeSSL
             $returnobject.FirstReminderInDays = $this.FirstReminderInDays  
             $returnobject.SecondReminderInDays = $this.SecondReminderInDays 
 			$returnobject.FinalReminderInDays = $this.FinalReminderInDays 
-            $returnobject.ContactGroupID = $this.ResolveContactGroups($this.contactGroup)
+            $returnobject.ContactGroup = $this.contactGroup
             $returnobject.id = 0 # null misbehaves
             #$this.TestID = 0
         }
@@ -221,7 +221,7 @@ class StatusCakeSSL
             $returnobject.FirstReminderInDays = $sslDetails.alert_at.split(',')[2]
             $returnobject.SecondReminderInDays = $sslDetails.alert_at.split(',')[1]
 			$returnobject.FinalReminderInDays = $sslDetails.alert_at.split(',')[0]
-            $returnobject.ContactGroupID = $sslDetails.contact_groups
+            $returnobject.ContactGroup = $this.ResolveContactGroupIdsToNames($sslDetails.contact_groups)
             $returnObject.id = $CheckID
             #$this.TestID = $CheckID
         }
@@ -279,14 +279,27 @@ class StatusCakeSSL
 
     [int[]] ResolveContactGroups([string[]]$cgNames)
     {
-        Write-Verbose "Resolving Contact Groups"
+        Write-Verbose "Resolving Contact Groups ($cgNames) to IDs"
         $groups = $this.GetApiResponse("/ContactGroups", 'GET', $null)
         $r = @()
         for($x=0;$x -lt $cgNames.Length;$x++) {
-            Write-Verbose ("Resolving group name " + $cgNames[$x])
+            Write-Verbose (" - Resolving group name " + $cgNames[$x])
             $r += ($groups | Where-Object { $_.GroupName -eq $cgNames[$x] } | Select-Object -expand ContactID)
         }
-        Write-Verbose ("Found Contact Groups " + ($r -join ","))
+        Write-Verbose (" - Found Contact Groups " + ($r -join ","))
+        return $r
+    }
+
+    [string[]] ResolveContactGroupIdsToNames([int[]]$contactGroupIds)
+    {
+        Write-Verbose "Resolving Contact Groups ($contactGroupIds) to names"
+        $groups = $this.GetApiResponse("/ContactGroups", 'GET', $null)
+        $r = @()
+        for($x=0;$x -lt $contactGroupIds.Length;$x++) {
+            Write-Verbose (" - Resolving group id " + $contactGroupIds[$x])
+            $r += ($groups | Where-Object { $_.ContactID -eq $contactGroupIds[$x] } | Select-Object -expand GroupName)
+        }
+        Write-Verbose (" - Found Contact Groups " + ($r -join ","))
         return $r
     }
 
