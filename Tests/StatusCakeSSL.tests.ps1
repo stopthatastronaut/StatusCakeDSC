@@ -56,10 +56,10 @@ Describe "The StatusCakeSSL bits" {
             $sccg.SecondReminderInDays  = 6
             $sccg.FinalReminderInDays   = 1
             $sccg.ContactGroup          = @("ExistingContactGroup")
-            $sccg.get() } | Should not throw
+            $sccg.set() } | Should not throw
     }
 
-    It "Should be able to Change SSL check" {
+    It "Should be able to change SSL check" {
         {
             $sccg.Ensure                = "Present"
             $sccg.CheckRate             = 300
@@ -71,12 +71,35 @@ Describe "The StatusCakeSSL bits" {
             $sccg.SecondReminderInDays  = 7
             $sccg.FinalReminderInDays   = 4
             $sccg.ContactGroup          = @("ExistingContactGroup")
-            $sccg.get() } | Should not throw
+            $sccg.set() } | Should not throw
     }
     
     It "Should be able to delete an SSL check" {   # This test only works against a premium account. commenting out temporarily until we can add a reasonable mock
-        # {   $sccg.Ensure = 'Absent'
-            # $sccg.Set() } | Should Not Throw     
-            $true | Should Be $true       
+        
+        do {
+            write-host "Waiting for test $https://www.$uniquekey.net to exist..."
+            $statusCakeSSLTest = [StatusCakeSSL]::New()
+            $statusCakeSSLTest.Name                 = "https://www.$uniquekey.net"
+            $statusCakeSSLTest.Ensure               = "Present"
+            $statusCakeSSLTest.CheckRate            = 300
+            $statusCakeSSLTest.AlertOnExpiration    = $false
+            $statusCakeSSLTest.AlertOnProblems      = $true
+            $statusCakeSSLTest.AlertOnReminders     = $true
+            $statusCakeSSLTest.FirstReminderInDays  = 25;
+            $statusCakeSSLTest.SecondReminderInDays = 7
+            $statusCakeSSLTest.FinalReminderInDays  = 4
+            $statusCakeSSLTest.ContactGroup         = @("ExistingContactGroup")
+    
+            $found = $statusCakeSSLTest.Test()
+            if (-not $found) {
+                Write-Host "SSL Test $($statusCakeSSLTest.Name) not yet created. Waiting 3 seconds"
+                Start-Sleep -seconds 3
+            }
+        } while (-not $found)
+
+        $sccg.Name          = "https://www.$uniquekey.net"
+        $sccg.Ensure        = 'Absent'
+        $sccg.ContactGroup  = @("ExistingContactGroup")
+        $sccg.Set() 
     }
 }
