@@ -32,9 +32,9 @@ if($mver -gt $pver)
     # TODO: gather release notes, publish with notes
 
     Write-Output "Publishing the StatusCakeDSC Module..."
-    Publish-Module -Path "./Modules/StatusCakeDSC" -NuGetApiKey $NuGetApiKey -verbose 
+    Publish-Module -Path "./Modules/StatusCakeDSC" -NuGetApiKey $NuGetApiKey -Verbose 
 
-    git config --global user.email "stopthatastronaut@gail.com" 
+    git config --global user.email "stopthatastronaut@gmail.com" 
     git config --global user.name "Octopus - deploy.d.evops.co" 
 
     git tag -a "$mver" -m "Version $mver release"

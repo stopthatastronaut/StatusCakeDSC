@@ -77,7 +77,7 @@ Describe "The StatusCakeSSL bits" {
     It "Should be able to delete an SSL check" {   # This test only works against a premium account. commenting out temporarily until we can add a reasonable mock
         
         do {
-            write-host "Waiting for test $https://www.$uniquekey.net to exist..."
+            write-host "Waiting for test https://www.$uniquekey.net to exist..."
             $statusCakeSSLTest = [StatusCakeSSL]::New()
             $statusCakeSSLTest.Name                 = "https://www.$uniquekey.net"
             $statusCakeSSLTest.Ensure               = "Present"
