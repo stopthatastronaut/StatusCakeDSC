@@ -125,6 +125,12 @@ class StatusCakeTest
             $testOK = $false
         }
 
+        if($this.Paused -ne $refobject.Paused)
+        {
+            Write-Verbose "Paused has changed"
+            $testOK = $false
+        }
+
         return $testOK
     }
 
