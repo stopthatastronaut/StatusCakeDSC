@@ -130,6 +130,8 @@ or you can create a `.securecreds` file in the same location as the Module, with
 }
 ```
 
+You can use [createcredsfile.ps1](createcredsfile.ps1) to create securecreds files. This script will prompt for your credentials and drop them into `%ProgramFiles%\WindowsPowerShell\Modules\StatusCakeDSC`.
+
 More information on securing credentials with PSCredential Objects, see the [following link](https://docs.microsoft.com/en-us/powershell/dsc/securemof)
 
 ## A note on API keys and rate limits

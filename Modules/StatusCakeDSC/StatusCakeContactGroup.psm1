@@ -29,6 +29,8 @@ class StatusCakeContactGroup
     [string] $PingUrl
     [DscProperty()]
     [string[]] $mobile
+    [DscProperty()]
+    [int] $MaxRetries = 10
     
     [DscProperty(NotConfigurable)] # if it exists, we use this to update it
     [nullable[int]] $ContactID = $null
@@ -74,7 +76,7 @@ class StatusCakeContactGroup
 
         # do they differ?
         $diff = Compare-Object $refObject $this   # this is pretty much useless
-        if($diff -ne $null)
+        if($null -ne $diff)
         {
             Write-Verbose "Found differences in shallow compare"
             $contactOK = $false
@@ -134,7 +136,7 @@ class StatusCakeContactGroup
             throw "Multiple Ids found with the same name. StatusCakeDSC uses Test Name as a unique key, and cannot continue"
         }
         
-        if($sccontact -ne $null)
+        if($null -ne $sccontact)
         {
             # it exists in StatusCake
             Write-Verbose ("I found a contact group with ID " +  $scContact.contactID)
@@ -152,7 +154,7 @@ class StatusCakeContactGroup
         else
         {
             # it does not exist in Statuscake
-            Write-verbose "I found no contact group with this name in StatusCake"
+            Write-Verbose "I found no contact group with this name in StatusCake"
             $returnObject.Ensure = [Ensure]::Absent
             $returnObject.ContactID = 0  # null is known to misbehave, so let's set this to 0
             $returnobject.GroupName = $this.GroupName
@@ -169,7 +171,7 @@ class StatusCakeContactGroup
 
     [Object] GetApiResponse($stem, $method = 'GET', $body = $null)
     {
-        if($body -ne $null)
+        if($null -ne $body)
         {
             Write-Verbose ($body | convertto-json -depth 4)
         }
@@ -200,15 +202,19 @@ class StatusCakeContactGroup
 
         if($method -ne 'GET')
         {
-            $httpresponse = Invoke-RestMethod "https://app.statuscake.com/API$stem" `
+            $httpresponse = $this.InvokeWithBackoff({
+                Invoke-RestMethod "https://app.statuscake.com/API$stem" `
                 -method $method -body $body -headers $headers `
                 -ContentType "application/x-www-form-urlencoded" `
-                -MaximumRedirection 0
+                -MaximumRedirection 0 
+            })
         }
         else
         {
-            $httpresponse = Invoke-RestMethod "https://app.statuscake.com/API$stem" `
-                -method GET -headers $headers                 
+            $httpresponse = $this.InvokeWithBackoff({
+                Invoke-RestMethod "https://app.statuscake.com/API$stem" `
+                -method GET -headers $headers 
+            })
         }
 
         if(($httpresponse.issues | Measure-Object | Select-Object -expand Count) -gt 0 ) {
@@ -216,6 +222,28 @@ class StatusCakeContactGroup
         }
 
         return $httpresponse
+    }
+
+    [Object] InvokeWithBackoff([scriptblock]$ScriptBlock) {
+        
+        $backoff = 1
+        $retrycount = 0
+        $returnvalue = $null
+        while($returnvalue -eq $null -and $retrycount -lt $this.MaxRetries) {
+            try {
+                $returnvalue = Invoke-Command $ScriptBlock
+            }
+            catch
+            {
+                Write-Verbose ($error | Select-Object -first 1 )
+                Start-Sleep -MilliSeconds ($backoff * 500)
+                $backoff = $backoff + $backoff
+                $retrycount++
+                Write-Verbose "invoking a backoff: $backoff. We have tried $retrycount times"
+            }
+        }
+    
+        return $returnvalue
     }
 
     [Object] GetObjectToPost($contactID)
@@ -233,17 +261,17 @@ class StatusCakeContactGroup
             Email = ($this.Email -join ",")
         }
 
-        if($this.Boxcar -ne $null)
+        if($null -ne $this.Boxcar)
         {
             $r | Add-Member -MemberType NoteProperty -Name Boxcar -Value $this.Boxcar
         }
 
-        if($this.Pushover -ne $null)
+        if($null -ne $this.Pushover)
         {
             $r | Add-Member -MemberType NoteProperty -Name Pushover -Value $this.Pushover
         }
 
-        if($this.PingUrl -ne $null)
+        if($null -ne $this.PingUrl)
         {
             $r | Add-Member -MemberType NoteProperty -Name PingUrl -Value $this.PingUrl
         }
