@@ -200,15 +200,19 @@ class StatusCakeContactGroup
 
         if($method -ne 'GET')
         {
-            $httpresponse = Invoke-RestMethod "https://app.statuscake.com/API$stem" `
+            $httpresponse = Invoke-WithBackOff({
+                Invoke-RestMethod "https://app.statuscake.com/API$stem" `
                 -method $method -body $body -headers $headers `
                 -ContentType "application/x-www-form-urlencoded" `
                 -MaximumRedirection 0
+            })
         }
         else
         {
-            $httpresponse = Invoke-RestMethod "https://app.statuscake.com/API$stem" `
-                -method GET -headers $headers                 
+            $httpresponse = Invoke-WithBackOff({
+                Invoke-RestMethod "https://app.statuscake.com/API$stem" `
+                -method GET -headers $headers
+            })
         }
 
         if(($httpresponse.issues | Measure-Object | Select-Object -expand Count) -gt 0 ) {
@@ -216,6 +220,28 @@ class StatusCakeContactGroup
         }
 
         return $httpresponse
+    }
+
+    [Object] InvokeWithBackoff([scriptblock]$ScriptBlock) {
+        
+        $backoff = 1
+        $retrycount = 0
+        $returnvalue = $null
+        while($returnvalue -eq $null -and $retrycount -lt $this.MaxRetries) {
+            try {
+                $returnvalue = Invoke-Command $ScriptBlock
+            }
+            catch
+            {
+                Write-Verbose ($error | Select-Object -first 1 )
+                Start-Sleep -MilliSeconds ($backoff * 500)
+                $backoff = $backoff + $backoff
+                $retrycount++
+                Write-Verbose "invoking a backoff: $backoff. We have tried $retrycount times"
+            }
+        }
+    
+        return $returnvalue
     }
 
     [Object] GetObjectToPost($contactID)
