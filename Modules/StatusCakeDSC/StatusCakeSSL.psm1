@@ -40,6 +40,8 @@ class StatusCakeSSL
 
     [DScProperty()]
     [string[]] $ContactGroup
+    [DscProperty()]
+    [int] $MaxRetries = 10
 
     #[DscProperty()]
     #[bool] $paused =  $false

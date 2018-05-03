@@ -29,6 +29,8 @@ class StatusCakeContactGroup
     [string] $PingUrl
     [DscProperty()]
     [string[]] $mobile
+    [DscProperty()]
+    [int] $MaxRetries = 10
     
     [DscProperty(NotConfigurable)] # if it exists, we use this to update it
     [nullable[int]] $ContactID = $null
@@ -152,7 +154,7 @@ class StatusCakeContactGroup
         else
         {
             # it does not exist in Statuscake
-            Write-verbose "I found no contact group with this name in StatusCake"
+            Write-Verbose "I found no contact group with this name in StatusCake"
             $returnObject.Ensure = [Ensure]::Absent
             $returnObject.ContactID = 0  # null is known to misbehave, so let's set this to 0
             $returnobject.GroupName = $this.GroupName
@@ -200,18 +202,18 @@ class StatusCakeContactGroup
 
         if($method -ne 'GET')
         {
-            $httpresponse = Invoke-WithBackOff({
+            $httpresponse = $this.InvokeWithBackoff({
                 Invoke-RestMethod "https://app.statuscake.com/API$stem" `
                 -method $method -body $body -headers $headers `
                 -ContentType "application/x-www-form-urlencoded" `
-                -MaximumRedirection 0
+                -MaximumRedirection 0 
             })
         }
         else
         {
-            $httpresponse = Invoke-WithBackOff({
+            $httpresponse = $this.InvokeWithBackoff({
                 Invoke-RestMethod "https://app.statuscake.com/API$stem" `
-                -method GET -headers $headers
+                -method GET -headers $headers 
             })
         }
 
