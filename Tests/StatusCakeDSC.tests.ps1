@@ -11,6 +11,7 @@ $hashArray = @()
     "StatusCakeTest.psm1", 
     "StatusCakeDSC.psd1", 
     "StatusCakeDSC.psm1", 
+    "StatusCakeSSL.psm1",
     "StatusCakeContactGroup.psm1") | % {
 
     $hash = Get-FileHash -Path .\Modules\StatusCakeDSC\$_ -Algorithm SHA256 -verbose
@@ -24,7 +25,7 @@ git add .\hashes.json
 Describe "PSScriptAnalyzer" {
     Import-Module PSScriptAnalyzer 
     $excludedRules = @(
-        # 'PSUseShouldProcessForStateChangingFunctions'
+        'PSUseDeclaredVarsMoreThanAssignments' # bloody awful rule. doesn't know how scope works.
     )
     $excludedRules | % { Write-Warning "Excluding Rule $_" }
     $results = Invoke-ScriptAnalyzer .\  -recurse -exclude $excludedRules
@@ -36,5 +37,22 @@ Describe "PSScriptAnalyzer" {
         Write-Warning "Failed with $($results.length) PSScriptAnalyzer issues"
         $true | Should be $true  # temporarily disabled
         # $results.length | Should Be 0
+    }
+}
+
+Describe "There are no API keys in this repo" {
+    It "Shouldn't have anything that looks like an API key" {
+        $exclusions = @("*PSScriptAnalyzer.json", "*StatusCakeSSL.tests.ps1", "*.creds") # known locations with false positives
+        Get-ChildItem -File -path .\ -Recurse -Exclude $exclusions | select-string -Pattern "`"[a-zA-Z0-9]{20}`"" | Should be $null
+    }
+}
+
+Describe "Help Files" {
+    It "Should have a help file for each Resource" {
+        $manifest = (Import-PowerShellDataFile .\Modules\StatusCakeDSC\StatusCakeDSC.psd1) 
+
+        $manifest.DscResourcesToExport | ForEach-Object {
+            Test-Path ".\Modules\StatusCakeDSC\en-US\About_DSCResource_$_.help.txt" | Should Be $true
+        }
     }
 }

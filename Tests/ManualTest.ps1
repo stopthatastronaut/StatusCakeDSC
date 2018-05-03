@@ -26,7 +26,7 @@
 }
 
 # load credentials
-$creds = gc .\..\.securecreds -raw | convertfrom-json 
+$creds = Get-Content .\..\.securecreds -raw | convertfrom-json 
 
 $secpassword = ConvertTo-SecureString $creds.ApiKey 
 $credential = [PSCredential]::new($creds.UserName, $secpassword)

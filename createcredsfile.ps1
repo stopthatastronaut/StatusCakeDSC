@@ -1,4 +1,5 @@
-﻿param(
+﻿[Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingConvertToSecureStringWithPlainText", "")]
+param(
     [Parameter(Mandatory = $true)]
     $StatusCakeApiKey,
     [Parameter(Mandatory = $true)]

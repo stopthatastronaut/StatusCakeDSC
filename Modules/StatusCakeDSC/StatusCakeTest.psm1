@@ -38,6 +38,8 @@ class StatusCakeTest
     [string] $FindString
     [DscProperty()]
     [string[]] $ContactGroup
+    [DscProperty()]
+    [int] $MaxRetries = 10
     
     # premium features
     [DscProperty()]
@@ -159,12 +161,12 @@ class StatusCakeTest
         $returnobject = [StatusCakeTest]::new()      
 
         # need a check here for duped by name
-        if(($checkId | Measure-Object | Select -expand Count) -gt 1)
+        if(($checkId | Measure-Object | Select-Object -expand Count) -gt 1)
         {
             throw "Multiple Ids found with the same name. StatusCakeDSC uses Test Name as a unique key, and cannot continue"
         }
 
-        if(($checkId | Measure-Object | Select -expand Count) -le 0)
+        if(($checkId | Measure-Object | Select-Object -expand Count) -le 0)
         {
             Write-Verbose "Looks like our check doesn't exist"
             # check doesn't exist      
@@ -231,17 +233,21 @@ class StatusCakeTest
 
         if($method -ne 'GET')
         {
-            $httpresponse = Invoke-RestMethod "https://app.statuscake.com/API$stem" `
+            $httpresponse = $this.InvokeWithBackoff( { 
+                Invoke-RestMethod "https://app.statuscake.com/API$stem" `
                 -method $method -body $body -headers $headers `
                 -ContentType "application/x-www-form-urlencoded" 
+            })
         }
         else
         {
-            $httpresponse =  Invoke-RestMethod "https://app.statuscake.com/API$stem" `
-                -method GET -headers $headers               
+            $httpresponse =  $this.InvokeWithBackoff( { 
+                Invoke-RestMethod "https://app.statuscake.com/API$stem" `
+                -method GET -headers $headers  
+            })             
         }
-        # if the issues array is not empty, we should throw here. probably
 
+        # if the issues array is not empty, we should throw here. 
         if(($httpresponse.issues | measure-object | select-object -expand Count) -gt 0 ) {
             throw ($httpresponse.Issues | out-string)
         }
@@ -301,6 +307,28 @@ class StatusCakeTest
             $r.add("TestID", $TestID)
         }
         return $r
+    }
+
+    [Object] InvokeWithBackoff([scriptblock]$ScriptBlock) {
+        
+        $backoff = 1
+        $retrycount = 0
+        $returnvalue = $null
+        while($returnvalue -eq $null -and $retrycount -lt $this.MaxRetries) {
+            try {
+                $returnvalue = Invoke-Command $ScriptBlock
+            }
+            catch
+            {
+                Write-Verbose ($error | Select-Object -first 1 )
+                Start-Sleep -MilliSeconds ($backoff * 500)
+                $backoff = $backoff + $backoff
+                $retrycount++
+                Write-Verbose "invoking a backoff: $backoff. We have tried $retrycount times"
+            }
+        }
+    
+        return $returnvalue
     }
 }
 

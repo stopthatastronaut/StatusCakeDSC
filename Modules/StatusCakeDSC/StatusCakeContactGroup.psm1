@@ -74,7 +74,7 @@ class StatusCakeContactGroup
 
         # do they differ?
         $diff = Compare-Object $refObject $this   # this is pretty much useless
-        if($diff -ne $null)
+        if($null -ne $diff)
         {
             Write-Verbose "Found differences in shallow compare"
             $contactOK = $false
@@ -134,7 +134,7 @@ class StatusCakeContactGroup
             throw "Multiple Ids found with the same name. StatusCakeDSC uses Test Name as a unique key, and cannot continue"
         }
         
-        if($sccontact -ne $null)
+        if($null -ne $sccontact)
         {
             # it exists in StatusCake
             Write-Verbose ("I found a contact group with ID " +  $scContact.contactID)
@@ -169,7 +169,7 @@ class StatusCakeContactGroup
 
     [Object] GetApiResponse($stem, $method = 'GET', $body = $null)
     {
-        if($body -ne $null)
+        if($null -ne $body)
         {
             Write-Verbose ($body | convertto-json -depth 4)
         }
@@ -233,17 +233,17 @@ class StatusCakeContactGroup
             Email = ($this.Email -join ",")
         }
 
-        if($this.Boxcar -ne $null)
+        if($null -ne $this.Boxcar)
         {
             $r | Add-Member -MemberType NoteProperty -Name Boxcar -Value $this.Boxcar
         }
 
-        if($this.Pushover -ne $null)
+        if($null -ne $this.Pushover)
         {
             $r | Add-Member -MemberType NoteProperty -Name Pushover -Value $this.Pushover
         }
 
-        if($this.PingUrl -ne $null)
+        if($null -ne $this.PingUrl)
         {
             $r | Add-Member -MemberType NoteProperty -Name PingUrl -Value $this.PingUrl
         }

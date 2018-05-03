@@ -13,6 +13,80 @@ Describe "Object and properties" {
 
 }
 
+Describe "Backoff and retry" {
+    BeforeEach {        
+        $statehash = @{  # a hash to hold some function state
+            Failcount = 1
+            TimeStamps = @()
+            Runcode = $null
+        }
+    }
+
+    Function Get-RateLimitedThing {}
+    Mock Get-RateLimitedThing {
+        # returns something after four failures
+        $statehash.Failcount = $statehash.Failcount + 1
+        $statehash.TimeStamps += ( [DateTimeOffset]::Now.ToUnixTimeMilliSeconds() )
+
+        if ($statehash.failcount -lt 5) {
+            throw "threw at $($statehash.failcount)"
+            Write-Output $statehash.Failcount
+            Write-Verbose " $($statehash.failcount) " 
+        }
+        else {
+            return [pscustomobject]@{ Result = 'success'; PrivateIPAddress = '192.168.1.1'; PublicIpAddress = '203.122.3.4'}
+        }
+    } -Verifiable
+
+    $sccg = [StatusCakeTest]::New()   
+
+    Context "Basic backoff job" {
+        It "Should catch the thrown exception" {
+            { $sccg.InvokeWithBackoff( { Get-RateLimitedThing } ) } | Should Not Throw
+        }
+    }
+
+    Context "Attempting a backoff and retry" {
+        It "Should return something" {
+            $result = $sccg.InvokeWithBackoff( { Get-RateLimitedThing } )
+
+            $result.Result | Should Be 'success'
+        }
+
+        It "Should call the mock four times" {
+            Assert-MockCalled "Get-RateLimitedThing" -times 4
+        }
+    }
+    Context "Attempting a backoff and retry with a short limit" {
+        It "Should return null because we've gone beyond maxretries" {
+            $sccg.MaxRetries = 3
+            $result = $sccg.InvokeWithBackoff( { Get-RateLimitedThing } )
+
+            $result | Should Be $null
+        }
+
+        It "Should only call the mock three times" {
+            Assert-MockCalled "Get-RatelimitedThing" -times 3
+        }
+    }
+
+    Context "Examining if backoff actually backs off" {
+        It "should have an increased backoff timestamp gap as time goes on" {
+            $sccg.InvokeWithBackoff( { Get-RateLimitedThing } )
+
+            $gap1 = $statehash.TimeStamps[1] - $statehash.TimeStamps[0]
+            $gap2 = $statehash.TimeStamps[2] - $statehash.TimeStamps[1]
+
+            #Write-Host "gap1 : $gap1"
+            #Write-Host "gap2 : $gap2"
+
+            $gap2 -gt $gap1 | Should Be $true 
+            ($gap2 - $gap1) -gt 250 | Should Be $true
+        }
+    }
+
+}
+
 Describe "The statuscaketest bits" {
     $sccg = [StatusCakeTest]::New()   
 
