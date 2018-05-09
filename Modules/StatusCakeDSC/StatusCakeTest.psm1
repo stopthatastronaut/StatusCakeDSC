@@ -284,6 +284,8 @@ class StatusCakeTest
                 continue
             }
             $to.$($p.Name) = $from.$($p.Name)
+            # we know this throws, remove its error
+            $Error.RemoveAt(0)
         }
         return $to
     }

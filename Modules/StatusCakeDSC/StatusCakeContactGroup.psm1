@@ -251,9 +251,12 @@ class StatusCakeContactGroup
         foreach ($p in Get-Member -In $from -MemberType Property -Name *)
         {  trap {
                 Add-Member -In $To -MemberType NoteProperty -Name $p.Name -Value $From.$($p.Name) -Force
+                
                 continue
             }
             $to.$($p.Name) = $from.$($p.Name)
+            # we know this throws, remove its error
+            $Error.RemoveAt(0)
         }
         return $to
     }
