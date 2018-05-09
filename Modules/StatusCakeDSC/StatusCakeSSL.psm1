@@ -41,7 +41,7 @@ class StatusCakeSSL
     [DScProperty()]
     [string[]] $ContactGroup
     [DscProperty()]
-    [int] $MaxRetries = 10
+    [int] $MaxRetries = 5
 
     #[DscProperty()]
     #[bool] $paused =  $false
@@ -261,23 +261,47 @@ class StatusCakeSSL
 
         if($method -ne 'GET')
         {
-            $httpresponse = $this.InvokeWithBackoff({
-                Invoke-RestMethod "https://app.statuscake.com/API$stem" `
-                -method $method -body $body -headers $headers `
-                -ContentType "application/x-www-form-urlencoded" 
-            })
+            $splat = @{ 
+                uri = "https://app.statuscake.com/API$stem";
+                method = $method;
+                body = $body;
+                headers = $headers;
+                ContentType = "application/x-www-form-urlencoded";
+            }
         }
         else
         {
-            $httpresponse = $this.InvokeWithBackoff({
-                Invoke-RestMethod "https://app.statuscake.com/API$stem" `
-                -method GET -headers $headers
-            })
+            $splat = @{
+                uri = "https://app.statuscake.com/API$stem";
+                method = "GET";
+                headers = $headers;
+            }
         }
-        # if the issues array is not empty, we should throw here. probably
 
-        if(($httpresponse.issues | measure-object | select-object -expand Count) -gt 0 ) {
-            throw ($httpresponse.Issues | out-string)
+        #$httpresponse = $this.InvokeWithBackoff({   
+        try {   
+            $httpresponse = Invoke-RestMethod @splat
+        }
+        catch{
+            if($Error.Exception)
+            {
+                # if PS 6, we're shot. this'll work for PS5
+                $r = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
+                $r.BaseStream.Position = 0
+                $r.DiscardBufferedData()
+                $h = $r.ReadToEnd()
+                $httpresponse = $h | ConvertFrom-Json
+            }
+            else {
+                throw "No usable response received from server"
+            }  
+        }
+        #})
+
+        # SSL checks don't have an issues array like Tests. They have a Message field and a Success bool
+
+        if($httpresponse.status -ne 200 ) {
+            throw ($httpresponse.message | out-string)
         }
 
         return $httpresponse
