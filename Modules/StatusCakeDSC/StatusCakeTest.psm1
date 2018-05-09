@@ -233,26 +233,60 @@ class StatusCakeTest
 
         if($method -ne 'GET')
         {
-            $httpresponse = $this.InvokeWithBackoff( { 
-                Invoke-RestMethod "https://app.statuscake.com/API$stem" `
-                -method $method -body $body -headers $headers `
-                -ContentType "application/x-www-form-urlencoded" 
-            })
+            $splat = @{ 
+                uri = "https://app.statuscake.com/API$stem";
+                method = $method;
+                body = $body;
+                headers = $headers;
+                ContentType = "application/x-www-form-urlencoded";
+            }
         }
         else
         {
-            $httpresponse =  $this.InvokeWithBackoff( { 
-                Invoke-RestMethod "https://app.statuscake.com/API$stem" `
-                -method GET -headers $headers  
-            })             
+            $splat = @{
+                uri = "https://app.statuscake.com/API$stem";
+                method = "GET";
+                headers = $headers;
+            }
+        }
+ 
+        try {   
+            $h = Invoke-WebRequest @splat
+            $httpresponse = $this.CopyObject($h)
+            $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($h.Content | ConvertFrom-Json)
+        }
+        catch{
+            if($Error.Exception)
+            {
+                # if PS 6, we're shot. this'll work for PS5
+                $r = $_.Exception.Response
+                $httpresponse = $this.copyObject($r)
+                $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($r.Content | ConvertFrom-Json)
+            }
+            else {
+                throw "No usable response received"
+            }  
         }
 
-        # if the issues array is not empty, we should throw here. 
-        if(($httpresponse.issues | measure-object | select-object -expand Count) -gt 0 ) {
-            throw ($httpresponse.Issues | out-string)
+        # SSL checks don't have an issues array like Tests. They have a Message field and a Success bool
+        if($httpresponse.statuscode -ne 200 ) {
+            throw ($httpresponse.body.message | out-string)
         }
 
-        return $httpresponse
+        return $httpresponse.body 
+    }
+
+    [object] CopyObject([object]$from)
+    {
+        $to = [pscustomobject]@{}
+        foreach ($p in Get-Member -In $from -MemberType Property -Name *)
+        {  trap {
+                Add-Member -In $To -MemberType NoteProperty -Name $p.Name -Value $From.$($p.Name) -Force
+                continue
+            }
+            $to.$($p.Name) = $from.$($p.Name)
+        }
+        return $to
     }
 
     [int[]] ResolveContactGroups([string[]]$cgNames)

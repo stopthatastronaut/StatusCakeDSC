@@ -43,8 +43,8 @@ class StatusCakeSSL
     [DscProperty()]
     [int] $MaxRetries = 5
 
-    #[DscProperty()]
-    #[bool] $paused =  $false
+    [DscProperty()]
+    [bool] $paused =  $false
 
     [DscProperty(NotConfigurable)]
     [int] $id  
@@ -277,34 +277,44 @@ class StatusCakeSSL
                 headers = $headers;
             }
         }
-
-        #$httpresponse = $this.InvokeWithBackoff({   
+ 
         try {   
-            $httpresponse = Invoke-RestMethod @splat
+            $h = Invoke-WebRequest @splat
+            $httpresponse = $this.CopyObject($h)
+            $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($h.Content | ConvertFrom-Json)
         }
         catch{
             if($Error.Exception)
             {
                 # if PS 6, we're shot. this'll work for PS5
-                $r = [System.IO.StreamReader]::new($_.Exception.Response.GetResponseStream())
-                $r.BaseStream.Position = 0
-                $r.DiscardBufferedData()
-                $h = $r.ReadToEnd()
-                $httpresponse = $h | ConvertFrom-Json
+                $r = $_.Exception.Response
+                $httpresponse = $this.copyObject($r)
+                $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($r.Content | ConvertFrom-Json)
             }
             else {
-                throw "No usable response received from server"
+                throw "No usable response received"
             }  
         }
-        #})
 
         # SSL checks don't have an issues array like Tests. They have a Message field and a Success bool
-
-        if($httpresponse.status -ne 200 ) {
-            throw ($httpresponse.message | out-string)
+        if($httpresponse.statuscode -ne 200 ) {
+            throw ($httpresponse.body.message | out-string)
         }
 
-        return $httpresponse
+        return $httpresponse.body 
+    }
+
+    [object] CopyObject([object]$from)
+    {
+        $to = [pscustomobject]@{}
+        foreach ($p in Get-Member -In $from -MemberType Property -Name *)
+        {  trap {
+                Add-Member -In $To -MemberType NoteProperty -Name $p.Name -Value $From.$($p.Name) -Force
+                continue
+            }
+            $to.$($p.Name) = $from.$($p.Name)
+        }
+        return $to
     }
 
     [Object] InvokeWithBackoff([scriptblock]$ScriptBlock) {
