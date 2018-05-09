@@ -234,6 +234,7 @@ class StatusCakeContactGroup
             else {
                 throw "No usable response received"
             }  
+
         }
 
         # SSL checks don't have an issues array like Tests. They have a Message field and a Success bool
@@ -255,6 +256,28 @@ class StatusCakeContactGroup
             $to.$($p.Name) = $from.$($p.Name)
         }
         return $to
+    }
+
+    [Object] InvokeWithBackoff([scriptblock]$ScriptBlock) {
+        
+        $backoff = 1
+        $retrycount = 0
+        $returnvalue = $null
+        while($returnvalue -eq $null -and $retrycount -lt $this.MaxRetries) {
+            try {
+                $returnvalue = Invoke-Command $ScriptBlock
+            }
+            catch
+            {
+                Write-Verbose ($error | Select-Object -first 1 )
+                Start-Sleep -MilliSeconds ($backoff * 500)
+                $backoff = $backoff + $backoff
+                $retrycount++
+                Write-Verbose "invoking a backoff: $backoff. We have tried $retrycount times"
+            }
+        }
+    
+        return $returnvalue
     }
 
     [Object] InvokeWithBackoff([scriptblock]$ScriptBlock) {

@@ -268,9 +268,8 @@ class StatusCakeTest
             }  
         }
 
-        # SSL checks don't have an issues array like Tests. They have a Message field and a Success bool
         if($httpresponse.statuscode -ne 200 ) {
-            throw ($httpresponse.body.message | out-string)
+            throw ($httpresponse.body.issues | out-string)
         }
 
         return $httpresponse.body 
