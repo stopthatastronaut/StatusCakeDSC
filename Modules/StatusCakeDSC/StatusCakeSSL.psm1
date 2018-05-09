@@ -42,7 +42,6 @@ class StatusCakeSSL
     [string[]] $ContactGroup
     [DscProperty()]
     [int] $MaxRetries = 5
-    [int] $MaxRetries = 10
 
     [DscProperty()]
     [bool] $paused =  $false
@@ -280,7 +279,7 @@ class StatusCakeSSL
         }
  
         try {   
-            $h = Invoke-WebRequest @splat
+            $h = Invoke-WebRequest @splat -UseBasicParsing
             $httpresponse = $this.CopyObject($h)
             $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($h.Content | ConvertFrom-Json)
         }
@@ -316,28 +315,6 @@ class StatusCakeSSL
             $to.$($p.Name) = $from.$($p.Name)
         }
         return $to
-    }
-
-    [Object] InvokeWithBackoff([scriptblock]$ScriptBlock) {
-        
-        $backoff = 1
-        $retrycount = 0
-        $returnvalue = $null
-        while($returnvalue -eq $null -and $retrycount -lt $this.MaxRetries) {
-            try {
-                $returnvalue = Invoke-Command $ScriptBlock
-            }
-            catch
-            {
-                Write-Verbose ($error | Select-Object -first 1 )
-                Start-Sleep -MilliSeconds ($backoff * 500)
-                $backoff = $backoff + $backoff
-                $retrycount++
-                Write-Verbose "invoking a backoff: $backoff. We have tried $retrycount times"
-            }
-        }
-    
-        return $returnvalue
     }
 
     [Object] InvokeWithBackoff([scriptblock]$ScriptBlock) {

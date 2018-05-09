@@ -251,7 +251,7 @@ class StatusCakeTest
         }
  
         try {   
-            $h = Invoke-WebRequest @splat
+            $h = Invoke-WebRequest @splat -UseBasicParsing
             $httpresponse = $this.CopyObject($h)
             $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($h.Content | ConvertFrom-Json)
         }
