@@ -138,6 +138,8 @@ More information on securing credentials with PSCredential Objects, see the [fol
 
 At the time of writing (Dec 2017), Statuscake free accounts have rate limiting applied which makes the resource misbehave, throwing 500 errors. Paid accounts have no such limitation. We'll update this readme if and when that changes.
 
+Backoff and retry for rate-limits is a flagged-off feature at present, since limiting in the API is not granular.
+
 ## Testing
 
 To run the full suite of automatic tests, you will need valid credentials for an Active Statuscake account, in a .creds o .securecreds file. There is a subset of tests that can run without, but for full functionality, you need them.
