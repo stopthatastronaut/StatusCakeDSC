@@ -79,7 +79,12 @@ class StatusCakeTest
                 $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost($refObject.TestId, $this.ResolveContactGroups($this.contactGroup)))
             }
         }
-        Write-Verbose ("Status returned from API: " + ($status | ConvertTo-json -depth 4))
+        
+        if($null -ne $status)
+        {
+            Write-Verbose ("Status returned from API: " + ($status | ConvertTo-json -depth 4))
+        }
+        
     }        
     
     [bool] Test()
