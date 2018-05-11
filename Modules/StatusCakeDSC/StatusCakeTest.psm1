@@ -57,6 +57,9 @@ class StatusCakeTest
     [void] Set()
     {        
         $refObject = $this.Get()
+        $status = $null
+
+        Write-Verbose ("Found testID " + $refObject.TestID)
 
         if($this.Ensure -eq [Ensure]::Absent -and $refObject.TestID -ne 0)
         {
@@ -64,7 +67,7 @@ class StatusCakeTest
             Write-Verbose ("Deleting Test " + $this.Name)
             $status = $this.GetApiResponse(("/Tests/Details/?TestID=" + $refObject.TestID), 'DELETE', $null)
         }
-        else
+        elseif($this.Ensure -eq [Ensure]::Present)
         {
             if($refObject.TestID -eq 0)
             {

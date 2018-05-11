@@ -10,7 +10,7 @@
 RootModule = 'StatusCakeDSC'
 
 # Version number of this module.
-ModuleVersion = '2.3.2'
+ModuleVersion = '2.3.3'
 
 # ID used to uniquely identify this module
 GUID = '14c4f055-b47b-4ea8-a8d8-86aec7ad737c'

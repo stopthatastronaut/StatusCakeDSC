@@ -57,6 +57,7 @@ class StatusCakeSSL
     {        
         $refObject = $this.Get()
         $testOK = $this.Test()
+        $status = $null
 
         if($this.Ensure -eq [Ensure]::Absent -and $refObject.id -ne 0)
         {
@@ -64,7 +65,7 @@ class StatusCakeSSL
             Write-Verbose ("Deleting Test " + $this.Name + " ID: " + $refObject.id)
             $status = $this.GetApiResponse(("/SSL/Update?id=$($refObject.id)"), 'DELETE', $null)
         }
-        else
+        elseif($this.Ensure -eq [Ensure]::Present)
         {
             if($refObject.id -eq 0)
             {
@@ -80,8 +81,11 @@ class StatusCakeSSL
             }
                 
         }
-        Write-Verbose ("Status returned from API: " + ($status | ConvertTo-json -depth 4))
-        
+
+        if($null -ne $status)
+        {
+            Write-Verbose ("Status returned from API: " + ($status | ConvertTo-json -depth 4))
+        }        
     }        
     
     [bool] Test()

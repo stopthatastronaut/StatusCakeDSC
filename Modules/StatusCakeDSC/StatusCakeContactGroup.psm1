@@ -40,6 +40,7 @@ class StatusCakeContactGroup
     [void] Set()
     {
         $refObject = $this.Get()
+        $status = $null
 
         if($this.Ensure -eq "Absent" -and $refObject.ContactID -ne 0)
         {
@@ -47,7 +48,7 @@ class StatusCakeContactGroup
             Write-Verbose ("Deleting Contact Group " + $refObject.ContactID)
             $status = $this.GetApiResponse(('/ContactGroups/Update/?ContactID=' + $this.ContactID), "DELETE", $null)
         }
-        else
+        elseif($this.Ensure -eq [Ensure]::Present)
         {
             # we either need to create or update
             if($refObject.ContactID -eq 0)
@@ -63,7 +64,10 @@ class StatusCakeContactGroup
                 $status = $this.GetApiResponse(('/ContactGroups/Update/?ContactID=' + $this.ContactID), "PUT", $this.GetObjectToPost($refObject.ContactID))
             }
 
-            $status 
+            if($null -ne $status)
+            {
+                Write-Verbose ("Status returned from API: " + ($status | ConvertTo-json -depth 4))
+            }       
         }
     }        
     
