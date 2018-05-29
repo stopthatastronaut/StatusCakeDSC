@@ -9,7 +9,7 @@ copy-item c:\StatusCakeDSC\Modules\StatusCakeDSC $env:programfiles\WindowsPowerS
 $failcount = Invoke-Pester -EnableExit -Verbose
 
 # suppress a recurring psget error
-$errorlist = $error | ? {$_.Exception -notlike "System.Management.Automation.RuntimeException: Unable to find type*" -and $_.Exception.Message -notlike "Threw at*"}
+$errorlist = $error | ? {$_.Exception -notlike "System.Management.Automation.RuntimeException: Unable to find type*" -and $_.Exception.Message -notlike "Threw at*" -and $_.Exception.message -ne "ScriptHalted"}
 
 if($failcount -gt 0 -or $errorlist.count -gt 0)  # if tests have failed _or_ thrown errors, exit
 {
