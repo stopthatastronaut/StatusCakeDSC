@@ -52,6 +52,8 @@ class StatusCakeTest
     [int] $TestID   # if the test exists in Statuscake, we populate this with the ID
     [DscProperty(NotConfigurable)]
     [int[]] $ContactGroupID 
+    [DscProperty(NotConfigurable)]
+    [int] $RetryCount = 0
 
     
     [void] Set()
@@ -65,7 +67,7 @@ class StatusCakeTest
         {
             # we need to delete it"
             Write-Verbose ("Deleting Test " + $this.Name)
-            $status = $this.GetApiResponse(("/Tests/Details/?TestID=" + $refObject.TestID), 'DELETE', $null)
+            $status = $this.GetApiResponse(("/Tests/Details/?TestID=" + $refObject.TestID), 'DELETE', $null) | select -expand body
         }
         elseif($this.Ensure -eq [Ensure]::Present)
         {
@@ -73,13 +75,13 @@ class StatusCakeTest
             {
                 # we need to create it                
                 Write-Verbose ("Creating Test " + $this.Name)
-                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost(0, $this.ResolveContactGroups($this.contactGroup)))
+                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost(0, $this.ResolveContactGroups($this.contactGroup))) | select -expand body
             }
             else
             {
                 # we need to update it
                 Write-Verbose ("Updating Test " + $this.Name)
-                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost($refObject.TestId, $this.ResolveContactGroups($this.contactGroup)))
+                $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost($refObject.TestId, $this.ResolveContactGroups($this.contactGroup))) | select -expand body
             }
         }
         
@@ -165,7 +167,7 @@ class StatusCakeTest
         $this.Validate();
         
         # does it exist?
-        $checkId = $this.GetApiResponse("/Tests/", "GET", $null) | Where-Object {$_.WebsiteName -eq $this.Name} | Select-Object -expand TestId
+        $checkId = $this.GetApiResponse("/Tests/", "GET", $null) | select -expand Body | Where-Object {$_.WebsiteName -eq $this.Name} | Select-Object -expand TestId
         $returnobject = [StatusCakeTest]::new()      
 
         # need a check here for duped by name
@@ -193,7 +195,7 @@ class StatusCakeTest
         else
         {
             Write-Verbose "Check exists, fetching details from remote"
-            $testDetails = $this.GetApiResponse("/Tests/Details/?TestID=$checkId", 'GET', $null)    
+            $testDetails = $this.GetApiResponse("/Tests/Details/?TestID=$checkId", 'GET', $null)  | select -expand Body  
                                     
             $returnObject.Ensure = [Ensure]::Present
             $returnobject.Name = $this.Name
@@ -264,7 +266,7 @@ class StatusCakeTest
             $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($h.Content | ConvertFrom-Json)
         }
         catch{
-            if($Error.Exception)
+            if($_.Exception.Response)
             {
                 # if PS 6, we're shot. this'll work for PS5
                 $r = $_.Exception.Response
@@ -272,28 +274,40 @@ class StatusCakeTest
                 $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($r.Content | ConvertFrom-Json)
             }
             else {
-                throw "No usable response received"
+                # No response received. wait and retry
+                if($this.RetryCount -lt $this.MaxRetries)
+                {
+                    $this.RetryCount += 1
+                    Start-Sleep -seconds (1 * ($this.RetryCount + 1))
+                    $httpresponse = $this.GetApiResponse($stem, $method, $body)
+                }
+                else {
+                    throw "No usable response received"
+                }
             }  
         }
 
-        if($httpresponse.statuscode -ne 200 ) {
+        if($httpresponse.statuscode -ne 200) {
             throw ($httpresponse.body.issues | out-string)
         }
 
-        return $httpresponse.body 
+        return $httpresponse
     }
 
     [object] CopyObject([object]$from)
     {
         $to = [pscustomobject]@{}
-        foreach ($p in Get-Member -In $from -MemberType Property -Name *)
-        {  trap {
+        foreach ($p in Get-Member -In $from -MemberType Property, NoteProperty -Name *)
+        {  
+            trap {
                 Add-Member -In $To -MemberType NoteProperty -Name $p.Name -Value $From.$($p.Name) -Force
                 continue
             }
             $to.$($p.Name) = $from.$($p.Name)
-            # we know this throws, remove its error
-            $Error.RemoveAt(0)
+            # we know this throws, try to remove its error
+            try {                
+                $Error.RemoveAt(0)
+            } catch{}
         }
         return $to
     }
@@ -301,7 +315,7 @@ class StatusCakeTest
     [int[]] ResolveContactGroups([string[]]$cgNames)
     {
         Write-Verbose "Resolving Contact Groups"
-        $groups = $this.GetApiResponse("/ContactGroups", 'GET', $null)
+        $groups = $this.GetApiResponse("/ContactGroups", 'GET', $null)   | select -expand body
         $r = @()
         for($x=0;$x -lt $cgNames.Length;$x++) {
             Write-Verbose ("Resolving group name " + $cgNames[$x])
@@ -352,12 +366,11 @@ class StatusCakeTest
         return $r
     }
 
-    [Object] InvokeWithBackoff([scriptblock]$ScriptBlock) {
+    [Object] InvokeWithBackoff([scriptblock]$ScriptBlock) { # not in use
         
         $backoff = 1
-        $retrycount = 0
         $returnvalue = $null
-        while($returnvalue -eq $null -and $retrycount -lt $this.MaxRetries) {
+        while($returnvalue -eq $null -and $this.retrycount -lt $this.MaxRetries) {
             try {
                 $returnvalue = Invoke-Command $ScriptBlock
             }
@@ -366,8 +379,8 @@ class StatusCakeTest
                 Write-Verbose ($error | Select-Object -first 1 )
                 Start-Sleep -MilliSeconds ($backoff * 500)
                 $backoff = $backoff + $backoff
-                $retrycount++
-                Write-Verbose "invoking a backoff: $backoff. We have tried $retrycount times"
+                $this.retrycount++
+                Write-Verbose "invoking a backoff: $backoff. We have tried $($this.retrycount) times"
             }
         }
     
