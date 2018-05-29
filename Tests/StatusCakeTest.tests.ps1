@@ -13,7 +13,7 @@ Describe "Object and properties" {
 
 }
 
-Describe "Backoff and retry" {
+Describe "Backoff and retry" {   # we're not currently using this, so skipped
     BeforeEach {        
         $statehash = @{  # a hash to hold some function state
             Failcount = 1
@@ -43,7 +43,7 @@ Describe "Backoff and retry" {
     Context "Basic backoff job" {
         It "Should catch the thrown exception" {
             { $sccg.InvokeWithBackoff( { Get-RateLimitedThing } ) } | Should Not Throw
-        }
+        } -Skip
     }
 
     Context "Attempting a backoff and retry" {
@@ -51,11 +51,11 @@ Describe "Backoff and retry" {
             $result = $sccg.InvokeWithBackoff( { Get-RateLimitedThing } )
 
             $result.Result | Should Be 'success'
-        }
+        } -Skip
 
         It "Should call the mock four times" {
             Assert-MockCalled "Get-RateLimitedThing" -times 4
-        }
+        } -Skip
     }
     Context "Attempting a backoff and retry with a short limit" {
         It "Should return null because we've gone beyond maxretries" {
@@ -63,11 +63,11 @@ Describe "Backoff and retry" {
             $result = $sccg.InvokeWithBackoff( { Get-RateLimitedThing } )
 
             $result | Should Be $null
-        }
+        } -Skip 
 
         It "Should only call the mock three times" {
             Assert-MockCalled "Get-RatelimitedThing" -times 3
-        }
+        } -Skip
     }
 
     Context "Examining if backoff actually backs off" {
@@ -82,7 +82,59 @@ Describe "Backoff and retry" {
 
             $gap2 -gt $gap1 | Should Be $true 
             ($gap2 - $gap1) -gt 250 | Should Be $true
+        } -Skip
+    } 
+
+}
+
+DEscribe "CopyObject" {
+    It "Can copy a PSCustomObject" { # important for testing
+        $inobject = [pscustomobject]@{
+            StatusCode = 200;
+            StatusDescription = "OK";
+            Content = '{"MockedContent": "My mockedcontentishere"; "issues":"mockedissues"}'
         }
+        $sctr = [StatusCakeTest]::new()
+
+        $sctr.CopyObject($inobject).StatusCode | Should Be 200
+        $sctr.CopyObject($inobject).StatusDescription | Should Be "OK"
+    }
+}
+
+Describe "Backoff and retry within GetApiResponse" {
+
+
+    BeforeEach {        
+        $statehash = @{  # a hash to hold some function state
+            Failcount = 1
+            TimeStamps = @()
+            Runcode = $null
+        }
+    }
+
+    # the new retry functionality - only retry when we're not getting an HTTP status code back.
+    Mock Invoke-WebRequest {
+        $stateHash.Failcount = $stateHash.Failcount + 1
+        if($stateHash.Failcount -lt 4)
+        {
+            throw
+        }
+        else
+        {
+            return [pscustomobject]@{
+                StatusCode = 200;
+                StatusDescription = "OK";
+                Content = '{"MockedContent": "My mockedcontentishere", "issues":""}';
+            }
+        }
+    } -Verifiable
+
+    It "Should tolerate some retries then a good response" {
+        $sctr = [StatusCakeTest]::new()
+
+
+        $sctr.GetApiResponse('/Tests/', 'GET', $null) | select -expand body | Select -expand MockedContent | Should Be "My mockedcontentishere"
+        Assert-VerifiableMock
     }
 
 }
@@ -128,7 +180,7 @@ Describe "The statuscaketest bits" {
     }
 
     It "Should be able to find the test by name" {
-        $sccg.GetApiResponse("/Tests/", "GET", $null) | Where-Object { $_.WebSiteName -eq $NewTestName } | Should Not Be $null
+        $sccg.GetApiResponse("/Tests/", "GET", $null) | select -expand Body | Where-Object { $_.WebSiteName -eq $NewTestName } | Should Not Be $null
     }
 
     It "Should not throw if we try to create it again" {
@@ -173,7 +225,7 @@ Describe "The statuscaketest bits" {
     Start-Sleep -Seconds 5
 
     It "should not have the test we just created" {
-        $sccg.GetApiResponse("/Tests/", "GET", $null) | Where-Object { $_.WebSiteName -eq $NewTestName } | Should Be $null
+        $sccg.GetApiResponse("/Tests/", "GET", $null) | select -expand Body| Where-Object { $_.WebSiteName -eq $NewTestName } | Should Be $null
     }
 }
 
