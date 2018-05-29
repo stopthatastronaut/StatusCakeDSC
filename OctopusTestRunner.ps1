@@ -10,9 +10,9 @@ $results = Invoke-Pester -EnableExit -Verbose -passthru
 
 # suppress a recurring psget error
 $errorlist = $error | ? {
-		$_.Exception -notlike "System.Management.Automation.RuntimeException: Unable to find type*" -and 
+		$_.Exception -notlike "System.Management.Automation.RuntimeException: Unable to find type*" -and # psget throws this occasionally
 		$_.Exception.Message -notlike "Threw at*" -and 
-		$_.Exception.message -ne "ScriptHalted"
+		$_.Exception.message -ne "ScriptHalted"   # we throw this in testing retries
 	}
 
 if($results.FailedCount -gt 0 -or $errorlist.count -gt 0)  # if tests have failed _or_ thrown errors, exit
