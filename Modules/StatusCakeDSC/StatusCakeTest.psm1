@@ -289,6 +289,8 @@ class StatusCakeTest
                  throw $_
              }
         }
+
+        return $httpresponse
     }
 
     [object] CopyObject([object]$from)
