@@ -264,31 +264,30 @@ class StatusCakeTest
             $h = Invoke-WebRequest @splat -UseBasicParsing
             $httpresponse = $this.CopyObject($h)
             $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($h.Content | ConvertFrom-Json)
-        }
-        catch{
-            if($_.Exception.Response)
-            {
-                # if PS 6, we're shot. this'll work for PS5
-                $r = $_.Exception.Response
-                $httpresponse = $this.copyObject($r)
-                $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($r.Content | ConvertFrom-Json)
-            }
-            else {
-                # No response received. wait and retry
-                if($this.RetryCount -lt $this.MaxRetries)
-                {
-                    $this.RetryCount += 1
-                    Start-Sleep -seconds (1 * ($this.RetryCount + 1))
-                    $httpresponse = $this.GetApiResponse($stem, $method, $body)
-                }
-                else {
-                    throw "No usable response received"
-                }
-            }  
-        }
 
-        if($httpresponse.statuscode -ne 200) {
+            return $httpresponse
+        }
+        catch [System.Net.WebException] { 
+            $r = $_.Exception.Response
+            Write-Verbose "Exception thrown in API request. HTTP Response Received : $($r.StatusCode)" 
+            $httpresponse = $this.copyObject($r)
+            $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($r.Content | ConvertFrom-Json)
             throw ($httpresponse.body.issues | out-string)
+        }
+        catch {
+             Write-Verbose "Non-web exception caught: $($_.ToString())"
+             #retry
+
+             if($this.RetryCount -lt $this.MaxRetries)
+             {
+                $this.RetryCount = $this.RetryCount + 1
+                Start-Sleep -s 1
+                Write-Verbose "retrying"
+                $httpresponse = $this.GetApiResponse($stem, $method, $body)
+             }
+             else {
+                 throw $_
+             }
         }
 
         return $httpresponse
