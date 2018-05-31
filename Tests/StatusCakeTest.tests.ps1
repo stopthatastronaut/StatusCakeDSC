@@ -101,6 +101,8 @@ DEscribe "CopyObject" {
     }
 }
 
+
+
 Describe "Backoff and retry within GetApiResponse" {
 
 
@@ -176,11 +178,15 @@ Describe "The statuscaketest bits" {
     }
 
     It "the test we just created should be valid" {
-
+        $uptest = $sccg.Get()
+        $uptest.Ensure | Should Be "Present"
+        $uptest.Name | Should Be $NewTestName
+        $uptest.URL | Should Be 'https://www.google.com/'
+        $uptest.TestType | Should Be 'HTTP'
     }
 
     It "Should be able to find the test by name" {
-        $sccg.GetApiResponse("/Tests/", "GET", $null) | select -expand Body | Where-Object { $_.WebSiteName -eq $NewTestName } | Should Not Be $null
+        $sccg.GetApiResponse("/Tests/", "GET", $null) | Select-Object -expand Body | Where-Object { $_.WebSiteName -eq $NewTestName } | Should Not Be $null
     }
 
     It "Should not throw if we try to create it again" {
@@ -211,6 +217,22 @@ Describe "The statuscaketest bits" {
         $sccg.Test() | Should Be $false
     }
 
+    Context "When the API throws a 400 response" {
+        Mock Invoke-WebRequest {
+            $exception 
+
+            throw [System.Net.WebException]::new('mocked exception')
+        } -ParameterFilter { $Uri -like "*/Tests/*"}
+    
+        Mock Write-Verbose {} -Verifiable
+    
+        It "Behaves as we expect when the API throws a 400"    {
+            $sccg.Set() 
+
+            Assert-VerifiableMock Write-Verbose -ParameterFilter { $Message -like "Exception thrown in API request. HTTP Response Received*" }
+        } -Skip
+    } 
+
     It "Can detect presence/absence at this point" {
         $sccg.Ensure = 'Absent'        
         $sccg.Test() | Should Be $false
@@ -228,6 +250,8 @@ Describe "The statuscaketest bits" {
         $sccg.GetApiResponse("/Tests/", "GET", $null) | select -expand Body| Where-Object { $_.WebSiteName -eq $NewTestName } | Should Be $null
     }
 }
+
+
 
 
 # remove the verbose preference, for test troubleshooting
