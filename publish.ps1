@@ -45,4 +45,4 @@ else {
     Write-Output "Version not incremented, declining to publish"
 }
 
-exit 0   # so Octopus exist correctly
+exit 0   # so Octopus exits correctly

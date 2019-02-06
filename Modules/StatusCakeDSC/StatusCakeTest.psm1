@@ -183,7 +183,7 @@ class StatusCakeTest
             $returnObject.Ensure = [Ensure]::Absent
             $returnobject.Name = $this.Name
             $returnobject.URL = $this.URL
-            $returnobject.CheckRate = $this.checkrate
+            $returnobject.CheckRate = $this.checkrate       
             $returnobject.Paused = $this.Paused
             $returnobject.ContactGroup = $this.ContactGroup
             $returnobject.ContactGroupID = $this.ResolveContactGroups($this.contactGroup)
@@ -210,6 +210,21 @@ class StatusCakeTest
             #$this.TestID = $CheckID
         }
         return $returnobject 
+    }
+
+    [Object] ProcessResponseIfJson([object]$in)
+    {
+        if($in.Headers["Content-Type"] -eq "application/json")
+        {
+            $in | Add-Member -name Body -value ($in.Content | ConvertFrom-Json) -MemberType NoteProperty
+        }
+        else 
+        {
+            $in | Add-Member -name Body -value ($in.Content) -MemberType NoteProperty
+            Write-Warning "StatusCake API failed to return JSON response"
+            Write-Warning $in.Body
+        }
+        return $in
     }
 
     [Object] GetApiResponse($stem, $method, $body)
@@ -263,15 +278,18 @@ class StatusCakeTest
         try {   
             $h = Invoke-WebRequest @splat -UseBasicParsing
             $httpresponse = $this.CopyObject($h)
-            $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($h.Content | ConvertFrom-Json)
 
+            $httpresponse = $this.ProcessResponseIfJson($httpresponse)
+            
             return $httpresponse
         }
-        catch [System.Net.WebException] { 
+        catch [System.Net.WebException] {  # catches non-200 Responses
             $r = $_.Exception.Response
             Write-Verbose "Exception thrown in API request. HTTP Response Received : $($r.StatusCode)" 
             $httpresponse = $this.copyObject($r)
-            $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($r.Content | ConvertFrom-Json)
+            
+            $httpresponse = $this.ProcessResponseIfJson($httpresponse)
+
             throw ($httpresponse.body.issues | out-string)
         }
         catch {
@@ -293,7 +311,7 @@ class StatusCakeTest
         return $httpresponse
     }
 
-    [object] CopyObject([object]$from)
+    [object] CopyObject([object]$from) # needs validation that the incoming object is not null
     {
         $to = [pscustomobject]@{}
         foreach ($p in Get-Member -In $from -MemberType Property, NoteProperty -Name *)
@@ -435,4 +453,4 @@ United States � Silicon Valley, California
 United States � Phoenix, Arizona,
 United States � New York, New York
 
-#>
+#>    

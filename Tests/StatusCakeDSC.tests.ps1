@@ -1,10 +1,21 @@
 # generate checksums pre-commit, add them to our git commit
-
-if(-not (Get-Module PSScriptAnalyzer))
+$localmodules = Get-Module PSScriptAnalyzer -Listavailable
+if(-not $localmodules)
 {
-    Install-Module PSScriptAnalyzer -Force
+    Write-Host "PSScriptAnalyzer not installed, installing"
+    Install-Module PSScriptAnalyzer -Force -Verbose  
 }
+else {
+    # let's see if we need to update here
+    $available = Find-Module PSScriptAnalyzer
 
+    $latestlocal = $localmodules | Sort-Object Version -Descending | Select -first 1
+    if($latestLocal.Version -lt $available.Version)
+    {
+        Install-Module PSScriptAnalyzer -Force -Verbose  
+    }
+
+}
 
 $hashArray = @()
 @(
@@ -28,7 +39,7 @@ Describe "PSScriptAnalyzer" {
         $excludedRules = @(
             'PSUseDeclaredVarsMoreThanAssignments' # bloody awful rule. doesn't know how scope works.
         )
-        $excludedRules | % { Write-Warning "Excluding Rule $_" }
+        $excludedRules | ForEach-Object { Write-Warning "Excluding Rule $_" }
         $results = Invoke-ScriptAnalyzer .\  -recurse -exclude $excludedRules
 
         # out to log(s)
@@ -52,7 +63,7 @@ Describe "Help Files" {
         $manifest = (Import-PowerShellDataFile .\Modules\StatusCakeDSC\StatusCakeDSC.psd1) 
 
         $manifest.DscResourcesToExport | ForEach-Object {
-            Test-Path ".\Modules\StatusCakeDSC\en-US\About_DSCResource_$_.help.txt" | Should Be $true
+            Test-Path ".\Modules\StatusCakeDSC\en-US\About_DSCResource_$($_).help.txt" | Should Be $true
         }
     }
 }
