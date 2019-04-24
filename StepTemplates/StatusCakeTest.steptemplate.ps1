@@ -80,6 +80,6 @@ $StepStatusCakeTest.Ensure         = $Ensure
 $StepStatusCakeTest.Name           = $TestName
 $StepStatusCakeTest.URL            = $TestUrl
 $StepStatusCakeTest.ApiCredential  = $TestApiCredential
-$StepStatusCakeTest.ContactGroup   = "Pester Test"
+$StepStatusCakeTest.ContactGroup   = "ExistingContactGroup"
 
 $StepStatusCakeTest.Set()

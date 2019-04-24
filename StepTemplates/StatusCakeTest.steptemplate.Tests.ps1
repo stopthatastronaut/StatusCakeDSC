@@ -5,46 +5,50 @@ $runner = "$here\$sut"
 
 Import-Module PowerShellGet # load ahead of time so we can mock it
 
+$creds = Get-Content "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.securecreds" | ConvertFrom-Json
+$secapikey = ConvertTo-SecureString $creds.ApiKey
+$testcredential = [PSCredential]::new($creds.UserName, $secapikey)
+
 Describe "StatusCakeTest" {
-    Mock Invoke-WebRequest {   # Gettting tests and they don't exist
-        return [pscustomobject]@{
-            StatusCode = 200;
-            StatusDescription = "OK";
-            "Content-Type" = "application/json";
-            Content = '{ "WebsiteName": "Not A pester-driven StatusCakeTest"}';
-            Headers = @{ "Content-Type" = "application/json" }
-        }
-    } -ParameterFilter { $Method -eq "GET" -and $URI -like "*/Tests/"}
-
-    Mock Invoke-WebRequest {   # posting a test
-        return [pscustomobject]@{
-            StatusCode = 200;
-            StatusDescription = "OK";
-            "Content-Type" = "application/json";
-            Content = '{"MockedContent": "My mockedcontentishere", "issues":"I have no issues"}';
-            Headers = @{ "Content-Type" = "application/json" }
-        }
-    } -ParameterFilter { $Method -eq "POST" -and $URI -like "*/Tests/"}
-
-    Mock Invoke-WebRequest {
-        return [pscustomobject]@{
-            content = '{ GroupName: "Pester Test", Emails: [ "team@trafficcake.com" ], Mobiles: [], Boxcar: "", Pushover: "gZh7mBkRIH4CsxWDwvkLBwlEZpxfpZ", ContactID: 5, PingURL: "", DesktopAlert: 1 }'
-        }
-    } -ParameterFilter { $Method -eq "GET" -and $URI -like "*/ContactGroups"}
-
-    It "Sends a post where we want it to go" {
-
+    It "Can set a test" {
         # set some vars
-        $Ensure = "Present"
-        $TestName = "A pester-driven StatusCakeTest"
-        $TestUrl = "https://statuscakedsc.d.evops.co/"
-        $TestApiKey = "API-1234567890"
-        $TestUserName = "statuscakedsc@d.evops.co"
+        {
+            $Ensure = "Present"
+            $TestName = "A pester-driven StatusCakeTest"
+            $TestUrl = "https://statuscakedsc.d.evops.co/"
+            $TestApiKey = $testcredential.GetNetworkCredential().Password
+            $TestUserName = $testcredential.GetNetworkCredential().UserName
 
-        .$runner
+            .$runner
+        } | Should Not Throw
 
-        Assert-MockCalled Invoke-WebRequest
-    } -Skip
+    }
+
+    It "Can set the test again without throwing" {
+        # set some vars
+        {
+            $Ensure = "Present"
+            $TestName = "A pester-driven StatusCakeTest"
+            $TestUrl = "https://statuscakedsc.d.evops.co/"
+            $TestApiKey = $testcredential.GetNetworkCredential().Password
+            $TestUserName = $testcredential.GetNetworkCredential().UserName
+
+            .$runner
+        } | Should Not Throw
+    }
+
+    It "Can remove the test" {
+        # set some vars
+        {
+            $Ensure = "Absent"
+            $TestName = "A pester-driven StatusCakeTest"
+            $TestUrl = "https://statuscakedsc.d.evops.co/"
+            $TestApiKey = $testcredential.GetNetworkCredential().Password
+            $TestUserName = $testcredential.GetNetworkCredential().UserName
+
+            .$runner
+        } | Should Not Throw
+    }
 }
 
 Describe "We install the module ahead of time" {
@@ -76,6 +80,7 @@ class StatusCakeTest
         $TestUrl = "https://statuscakedsc.d.evops.co/"
         $TestApiKey = "API-1234567890"
         $TestUserName = "statuscakedsc@d.evops.co"
+
 
         .$runner
 
