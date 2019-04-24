@@ -2,7 +2,7 @@
 
 A PowerShell Desired State Configuration (DSC) Provider for simple status checks on [Statuscake.com](http://statuscake.com). Gives PowerShell users a nice, declarative syntax for defining checks as part of their infrastructure-as-code repositories.
 
-![badge](https://img.shields.io/powershellgallery/v/StatusCakeDSC.svg?style=plastic "StatusCakeDSC on PowerShell Gallery")
+![](https://img.shields.io/powershellgallery/v/StatusCakeDSC.svg?style=plastic)
 
 ## Requirements
 

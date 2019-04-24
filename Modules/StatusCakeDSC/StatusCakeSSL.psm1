@@ -12,7 +12,7 @@ class StatusCakeSSL
 
     [DscProperty(Key)]
     [string]$Name
-    
+
     [DScProperty()]
     [PSCredential] $ApiCredential = [PSCredential]::Empty
 
@@ -20,7 +20,7 @@ class StatusCakeSSL
     [PSCredential]$BasicCredential = [PSCredential]::Empty
 
     [DscProperty()]
-    [int] $CheckRate = 300  
+    [int] $CheckRate = 300
 
     [DscProperty()]
     [boolean] $AlertOnExpiration
@@ -28,15 +28,17 @@ class StatusCakeSSL
     [boolean] $AlertOnProblems
 	[DscProperty()]
     [boolean] $AlertOnReminders
+    [DscProperty()]
+    [boolean] $AlertMixed
 
     [DscProperty()]
-    [int] $FirstReminderInDays = 30 
+    [int] $FirstReminderInDays = 30
 
 	[DscProperty()]
-    [int] $SecondReminderInDays = 7  
+    [int] $SecondReminderInDays = 7
 
 	[DscProperty()]
-    [int] $FinalReminderInDays = 1  
+    [int] $FinalReminderInDays = 1
 
     [DScProperty()]
     [string[]] $ContactGroup
@@ -47,14 +49,14 @@ class StatusCakeSSL
     [bool] $paused =  $false
 
     [DscProperty(NotConfigurable)]
-    [int] $id  
+    [int] $id
 
     [DscProperty(NotConfigurable)]
-    [int[]] $ContactGroupID 
+    [int[]] $ContactGroupID
 
-    
+
     [void] Set()
-    {        
+    {
         $refObject = $this.Get()
         $testOK = $this.Test()
         $status = $null
@@ -69,7 +71,7 @@ class StatusCakeSSL
         {
             if($refObject.id -eq 0)
             {
-                # we need to create it                
+                # we need to create it
                 Write-Verbose ("Creating SSL Check " + $this.Name)
                 $status = $this.GetApiResponse(('/SSL/Update'), "PUT", $this.GetObjectToPost(0, $this.ResolveContactGroups($this.contactGroup)))
             }
@@ -79,17 +81,17 @@ class StatusCakeSSL
                 Write-Verbose ("Updating SSL Check " + $this.Name)
                 $status = $this.GetApiResponse(('/SSL/Update'), "PUT", $this.GetObjectToPost($refObject.id, $this.ResolveContactGroups($this.contactGroup)))
             }
-                
+
         }
 
         if($null -ne $status)
         {
             Write-Verbose ("Status returned from API: " + ($status | ConvertTo-json -depth 4))
-        }        
-    }        
-    
+        }
+    }
+
     [bool] Test()
-    {        
+    {
         $testOK = $true # assume it's fine
         $refobject = $this.Get()
 
@@ -161,7 +163,7 @@ class StatusCakeSSL
 
     [void] Validate()
     {
-        write-verbose "Starting Validation" 
+        write-verbose "Starting Validation"
         if($this.CheckRate -ge 24000)
         {
             throw "Checkrate cannot be larger than 24000"
@@ -173,22 +175,22 @@ class StatusCakeSSL
         }
         if($this.ContactGroup -ne $null)
         {
-            $CheckContactGroupId = $this.ResolveContactGroups($this.contactGroup)    
+            $CheckContactGroupId = $this.ResolveContactGroups($this.contactGroup)
             if ($($CheckContactGroupId.count) -eq 0){
                 throw "You have specified a contact group that doesn't exist, cannot proceed."
             }
         }
-        write-verbose "Finishing Validation" 
+        write-verbose "Finishing Validation"
     }
-  
+
     [StatusCakeSSL] Get()
-    {        
+    {
         # first things first, validate
         $this.Validate();
-        
+
         # does it exist?
         $checkId = $this.GetApiResponse("/SSL/", "GET", $null) | Where-Object {$_.domain -eq $this.Name} | Select-Object -expand id
-        $returnobject = [StatusCakeSSL]::new()      
+        $returnobject = [StatusCakeSSL]::new()
 
         # need a check here for duped by name
         if(($checkId | Measure-Object | Select -expand Count) -gt 1)
@@ -199,16 +201,17 @@ class StatusCakeSSL
         if(($checkId | Measure-Object | Select -expand Count) -le 0)
         {
             Write-Verbose "Looks like our check doesn't exist"
-            # check doesn't exist      
+            # check doesn't exist
             $returnObject.Ensure = [Ensure]::Absent
             $returnobject.Name = $this.Name #is property: domain
             #$returnobject.paused = $this.paused
-            $returnobject.AlertOnExpiration = $this.AlertOnExpiration 
-            $returnobject.AlertOnProblems = $this.AlertOnProblems 
-            $returnobject.AlertOnReminders = $this.AlertOnReminders  
-            $returnobject.FirstReminderInDays = $this.FirstReminderInDays  
-            $returnobject.SecondReminderInDays = $this.SecondReminderInDays 
-			$returnobject.FinalReminderInDays = $this.FinalReminderInDays 
+            $returnobject.AlertOnExpiration = $this.AlertOnExpiration
+            $returnobject.AlertOnProblems = $this.AlertOnProblems
+            $returnobject.AlertOnReminders = $this.AlertOnReminders
+            $returnobject.AlertMixed = $this.AlertMixed
+            $returnobject.FirstReminderInDays = $this.FirstReminderInDays
+            $returnobject.SecondReminderInDays = $this.SecondReminderInDays
+			$returnobject.FinalReminderInDays = $this.FinalReminderInDays
             $returnobject.ContactGroup = $this.contactGroup
             $returnobject.id = 0 # null misbehaves
             #$this.TestID = 0
@@ -216,14 +219,15 @@ class StatusCakeSSL
         else
         {
             Write-Verbose "Check exists, fetching details from remote"
-            $sslDetails = $this.GetApiResponse("/SSL/?id=$checkId", 'GET', $null)    
-                                    
+            $sslDetails = $this.GetApiResponse("/SSL/?id=$checkId", 'GET', $null)
+
             $returnObject.Ensure = [Ensure]::Present
             $returnobject.Name = $this.Name
-            #$returnobject.paused = $sslDetails.paused 
-            $returnobject.AlertOnExpiration = $sslDetails.alert_expiry 
-            $returnobject.AlertOnProblems = $sslDetails.alert_broken 
+            #$returnobject.paused = $sslDetails.paused
+            $returnobject.AlertOnExpiration = $sslDetails.alert_expiry
+            $returnobject.AlertOnProblems = $sslDetails.alert_broken
             $returnobject.AlertOnReminders = $sslDetails.alert_reminder
+            $returnobject.AlertMixed = $sslDetails.alert_mixed
             $returnobject.FirstReminderInDays = $sslDetails.alert_at.split(',')[2]
             $returnobject.SecondReminderInDays = $sslDetails.alert_at.split(',')[1]
 			$returnobject.FinalReminderInDays = $sslDetails.alert_at.split(',')[0]
@@ -231,7 +235,7 @@ class StatusCakeSSL
             $returnObject.id = $CheckID
             #$this.TestID = $CheckID
         }
-        return $returnobject 
+        return $returnobject
     }
 
     [Object] GetApiResponse($stem, $method, $body)
@@ -251,21 +255,21 @@ class StatusCakeSSL
             }
             else
             {
-                $creds = Get-Content "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.securecreds" | ConvertFrom-Json 
+                $creds = Get-Content "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.securecreds" | ConvertFrom-Json
 
-                $secapikey = ConvertTo-SecureString $creds.ApiKey 
+                $secapikey = ConvertTo-SecureString $creds.ApiKey
                 $this.ApiCredential = [PSCredential]::new($creds.UserName, $secapikey)
             }
         }
 
         $headers = @{
-            API = $this.ApiCredential.GetNetworkCredential().Password; 
-            username = $this.ApiCredential.UserName
+            API = $this.ApiCredential.GetNetworkCredential().Password;
+            Username = $this.ApiCredential.UserName
         }
 
         if($method -ne 'GET')
         {
-            $splat = @{ 
+            $splat = @{
                 uri = "https://app.statuscake.com/API$stem";
                 method = $method;
                 body = $body;
@@ -281,8 +285,8 @@ class StatusCakeSSL
                 headers = $headers;
             }
         }
- 
-        try {   
+
+        try {
             $h = Invoke-WebRequest @splat -UseBasicParsing
             $httpresponse = $this.CopyObject($h)
             $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($h.Content | ConvertFrom-Json)
@@ -293,19 +297,24 @@ class StatusCakeSSL
                 # if PS 6, we're shot. this'll work for PS5
                 $r = $_.Exception.Response
                 $httpresponse = $this.copyObject($r)
-                $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($r.Content | ConvertFrom-Json)
+                $reqstream = $r.GetResponseStream()
+                $sr = New-Object System.IO.StreamReader $reqstream
+                $body = $sr.ReadToEnd()
+
+                $httpresponse | Add-Member -MemberType NoteProperty -Name body -Value ($body | ConvertFrom-Json)
+
             }
             else {
                 throw "No usable response received"
-            }  
+            }
         }
 
         # SSL checks don't have an issues array like Tests. They have a Message field and a Success bool
         if($httpresponse.statuscode -ne 200 ) {
-            throw ($httpresponse.body.message | out-string)
+            throw ($httpresponse.body | out-string)
         }
 
-        return $httpresponse.body 
+        return $httpresponse.body
     }
 
     [object] CopyObject([object]$from)
@@ -324,7 +333,7 @@ class StatusCakeSSL
     }
 
     [Object] InvokeWithBackoff([scriptblock]$ScriptBlock) {
-        
+
         $backoff = 1
         $retrycount = 0
         $returnvalue = $null
@@ -341,7 +350,7 @@ class StatusCakeSSL
                 Write-Verbose "invoking a backoff: $backoff. We have tried $retrycount times"
             }
         }
-    
+
         return $returnvalue
     }
 
@@ -389,9 +398,10 @@ class StatusCakeSSL
           alert_expiry = $this.AlertOnExpiration #required - Boolean
           alert_reminder = $this.AlertOnReminders #required - Boolean
           alert_broken = $this.AlertOnProblems #required - Boolean
+          alert_mixed = $this.AlertMixed #required - Boolean
           #paused = $p
         }
-        
+
         # optionals
         <#
         if($ContactGroupID.length -gt 0)
@@ -406,7 +416,7 @@ class StatusCakeSSL
             $r.Add("BasicUser", $this.BasicCredential.UserName)
             $r.Add("BasicPass", $this.BasicCredential.GetNetworkCredential().Password)
         }
-        
+
         if($id -ne 0)
         {
             Write-Verbose "Adding a checkID to post object, as we're updating"

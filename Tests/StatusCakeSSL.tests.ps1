@@ -12,13 +12,12 @@ Describe "Object and properties" {
 }
 
 Describe "The StatusCakeSSL bits" {
-    $sccg = [StatusCakeSSL]::New()   
+    $sccg = [StatusCakeSSL]::New()
 
     $NewTestName = "Pester Test $uniquekey"
-      
+
     It "Can list out SSL Checks using the internal method" {
-        {       
-            $sccg.GetApiResponse("/SSL/", "GET", $null) } | Should Not Throw
+        { $sccg.GetApiResponse("/SSL/", "GET", $null) } | Should Not Throw
     }
 
     It "Fails well when creating an SSL check when ContactGroup doesn't exist" {
@@ -36,7 +35,7 @@ Describe "The StatusCakeSSL bits" {
             $sccg.get() } | Should throw "You have specified a contact group that doesn't exist, cannot proceed."
 
             # we expect this to throw an error, but we check the stack for errors later. Remove the most recent.
-            
+
 
             if($error[0] -like "You have specified a contact group that*")
             {
@@ -73,9 +72,9 @@ Describe "The StatusCakeSSL bits" {
             $sccg.ContactGroup          = @("ExistingContactGroup")
             $sccg.set() } | Should not throw
     }
-    
+
     It "Should be able to delete an SSL check" {   # This test only works against a premium account. commenting out temporarily until we can add a reasonable mock
-        
+
         do {
             Write-Output "Waiting for test https://www.$uniquekey.net to exist..."
             $statusCakeSSLTest = [StatusCakeSSL]::New()
@@ -89,7 +88,7 @@ Describe "The StatusCakeSSL bits" {
             $statusCakeSSLTest.SecondReminderInDays = 7
             $statusCakeSSLTest.FinalReminderInDays  = 4
             $statusCakeSSLTest.ContactGroup         = @("ExistingContactGroup")
-    
+
             $found = $statusCakeSSLTest.Test()
             if (-not $found) {
                 Write-Output "SSL Test $($statusCakeSSLTest.Name) not yet created. Waiting 3 seconds"
@@ -100,6 +99,6 @@ Describe "The StatusCakeSSL bits" {
         $sccg.Name          = "https://www.$uniquekey.net"
         $sccg.Ensure        = 'Absent'
         $sccg.ContactGroup  = @("ExistingContactGroup")
-        $sccg.Set() 
+        $sccg.Set()
     }
 }
