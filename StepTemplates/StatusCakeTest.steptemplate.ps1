@@ -48,6 +48,15 @@ $StepTemplateParameters = @(
         'DisplaySettings' = @{
             "Octopus.ControlType" = "SingleLineText";
         }
+    },
+    @{
+        'Name' = 'FindString';
+        'Label' = 'String to find in the page';
+        'HelpText' = "The test should look for this string in the returned text";
+        'DefaultValue' = '';
+        'DisplaySettings' = @{
+            "Octopus.ControlType" = "SingleLineText";
+        }
     }
 )
 Write-Debug "Starting Step Template $StepTemplateName ('$StepTemplateDescription') with $($StepTemplateParameters.Count) parameters"
@@ -118,6 +127,10 @@ Function Invoke-StatusCakeStepTemplate # the init func
     $StepStatusCakeTest.URL            = $TestUrl
     $StepStatusCakeTest.ApiCredential  = $TestApiCredential
     $StepStatusCakeTest.ContactGroup   = $ContactGroup -split "`r`n"
+    if($FindString -ne "")
+    {
+        $StepStatusCakeTest.FindString = $FindString
+    }
 
     $StepStatusCakeTest.Set()
 

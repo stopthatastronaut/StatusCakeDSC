@@ -12,11 +12,11 @@ class StatusCakeTest
 
     [DscProperty(Key)]
     [string]$Name
-    
+
     [DScProperty()]
     [PSCredential] $ApiCredential = [PSCredential]::Empty
 
-    [DscProperty()]
+    [DscProperty(Mandatory)]
     [string] $URL
     [DscProperty()]
     [int] $Port = 80
@@ -40,7 +40,7 @@ class StatusCakeTest
     [string[]] $ContactGroup
     [DscProperty()]
     [int] $MaxRetries = 10
-    
+
     # premium features
     [DscProperty()]
     [int] $AlertDelayRate = 5  # maps to TriggerRate on the API. default 5, min 0,  max 100. How many minutes to wait before sending an alert
@@ -51,13 +51,13 @@ class StatusCakeTest
     [DscProperty(NotConfigurable)]
     [int] $TestID   # if the test exists in Statuscake, we populate this with the ID
     [DscProperty(NotConfigurable)]
-    [int[]] $ContactGroupID 
+    [int[]] $ContactGroupID
     [DscProperty(NotConfigurable)]
     [int] $RetryCount = 0
 
-    
+
     [void] Set()
-    {        
+    {
         $refObject = $this.Get()
         $status = $null
 
@@ -73,7 +73,7 @@ class StatusCakeTest
         {
             if($refObject.TestID -eq 0)
             {
-                # we need to create it                
+                # we need to create it
                 Write-Verbose ("Creating Test " + $this.Name)
                 $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost(0, $this.ResolveContactGroups($this.contactGroup))) | select -expand body
             }
@@ -84,16 +84,16 @@ class StatusCakeTest
                 $status = $this.GetApiResponse(('/Tests/Update/'), "PUT", $this.GetObjectToPost($refObject.TestId, $this.ResolveContactGroups($this.contactGroup))) | select -expand body
             }
         }
-        
+
         if($null -ne $status)
         {
             Write-Verbose ("Status returned from API: " + ($status | ConvertTo-json -depth 4))
         }
-        
-    }        
-    
+
+    }
+
     [bool] Test()
-    {        
+    {
         $testOK = $true # assume it's fine
         $refobject = $this.Get()
 
@@ -118,9 +118,9 @@ class StatusCakeTest
         if( (Compare-Object $this.ContactGroup $refObject.ContactGroup) -ne $null)   # this is an array. we need to compare it like an array
         {
             Write-Verbose "Contact Groups have changed"
-            Write-Verbose "Contact Group here: " 
+            Write-Verbose "Contact Group here: "
             Write-Verbose ($this.ContactGroup -join ",")
-            Write-Verbose "Contact Group there: " 
+            Write-Verbose "Contact Group there: "
             Write-Verbose ($refObject.ContactGroup -join ",")
             $testOK = $false
         }
@@ -158,17 +158,17 @@ class StatusCakeTest
             throw "Checkrate cannot be zero or negative"
         }
 
-        
+
     }
 
     [StatusCakeTest] Get()
-    {        
+    {
         # first things first, validate
         $this.Validate();
-        
+
         # does it exist?
         $checkId = $this.GetApiResponse("/Tests/", "GET", $null) | select -expand Body | Where-Object {$_.WebsiteName -eq $this.Name} | Select-Object -expand TestId
-        $returnobject = [StatusCakeTest]::new()      
+        $returnobject = [StatusCakeTest]::new()
 
         # need a check here for duped by name
         if(($checkId | Measure-Object | Select-Object -expand Count) -gt 1)
@@ -179,11 +179,11 @@ class StatusCakeTest
         if(($checkId | Measure-Object | Select-Object -expand Count) -le 0)
         {
             Write-Verbose "Looks like our check doesn't exist"
-            # check doesn't exist      
+            # check doesn't exist
             $returnObject.Ensure = [Ensure]::Absent
             $returnobject.Name = $this.Name
             $returnobject.URL = $this.URL
-            $returnobject.CheckRate = $this.checkrate       
+            $returnobject.CheckRate = $this.checkrate
             $returnobject.Paused = $this.Paused
             $returnobject.ContactGroup = $this.ContactGroup
             $returnobject.ContactGroupID = $this.ResolveContactGroups($this.contactGroup)
@@ -195,13 +195,13 @@ class StatusCakeTest
         else
         {
             Write-Verbose "Check exists, fetching details from remote"
-            $testDetails = $this.GetApiResponse("/Tests/Details/?TestID=$checkId", 'GET', $null)  | select -expand Body  
-                                    
+            $testDetails = $this.GetApiResponse("/Tests/Details/?TestID=$checkId", 'GET', $null)  | select -expand Body
+
             $returnObject.Ensure = [Ensure]::Present
             $returnobject.Name = $this.Name
             $returnobject.URL = $testDetails.URI
             $returnobject.CheckRate = [int]$testdetails.CheckRate
-            $returnobject.Paused = $testdetails.paused 
+            $returnobject.Paused = $testdetails.paused
             $returnobject.ContactGroup = $testDetails.ContactGroups | select-object -expand Name
             $returnobject.ContactGroupID = $testdetails.ContactGroups | select-object -expand ID
             $returnObject.TestID = $CheckID
@@ -209,7 +209,7 @@ class StatusCakeTest
             $returnobject.ConfirmationServers = [int]$testDetails.Confirmation
             #$this.TestID = $CheckID
         }
-        return $returnobject 
+        return $returnobject
     }
 
     [Object] ProcessResponseIfJson([object]$in)
@@ -218,7 +218,7 @@ class StatusCakeTest
         {
             $in | Add-Member -name Body -value ($in.Content | ConvertFrom-Json) -MemberType NoteProperty
         }
-        else 
+        else
         {
             $in | Add-Member -name Body -value ($in.Content) -MemberType NoteProperty
             Write-Warning "StatusCake API failed to return JSON response"
@@ -244,21 +244,21 @@ class StatusCakeTest
             }
             else
             {
-                $creds = Get-Content "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.securecreds" | ConvertFrom-Json 
+                $creds = Get-Content "$env:ProgramFiles\WindowsPowerShell\Modules\StatusCakeDSC\.securecreds" | ConvertFrom-Json
 
-                $secapikey = ConvertTo-SecureString $creds.ApiKey 
+                $secapikey = ConvertTo-SecureString $creds.ApiKey
                 $this.ApiCredential = [PSCredential]::new($creds.UserName, $secapikey)
             }
         }
 
         $headers = @{
-            API = $this.ApiCredential.GetNetworkCredential().Password; 
+            API = $this.ApiCredential.GetNetworkCredential().Password;
             username = $this.ApiCredential.UserName
         }
 
         if($method -ne 'GET')
         {
-            $splat = @{ 
+            $splat = @{
                 uri = "https://app.statuscake.com/API$stem";
                 method = $method;
                 body = $body;
@@ -274,20 +274,20 @@ class StatusCakeTest
                 headers = $headers;
             }
         }
- 
-        try {   
+
+        try {
             $h = Invoke-WebRequest @splat -UseBasicParsing
             $httpresponse = $this.CopyObject($h)
 
             $httpresponse = $this.ProcessResponseIfJson($httpresponse)
-            
+
             return $httpresponse
         }
         catch [System.Net.WebException] {  # catches non-200 Responses
             $r = $_.Exception.Response
-            Write-Verbose "Exception thrown in API request. HTTP Response Received : $($r.StatusCode)" 
+            Write-Verbose "Exception thrown in API request. HTTP Response Received : $($r.StatusCode)"
             $httpresponse = $this.copyObject($r)
-            
+
             $httpresponse = $this.ProcessResponseIfJson($httpresponse)
 
             throw ($httpresponse.body.issues | out-string)
@@ -315,14 +315,14 @@ class StatusCakeTest
     {
         $to = [pscustomobject]@{}
         foreach ($p in Get-Member -In $from -MemberType Property, NoteProperty -Name *)
-        {  
+        {
             trap {
                 Add-Member -In $To -MemberType NoteProperty -Name $p.Name -Value $From.$($p.Name) -Force
                 continue
             }
             $to.$($p.Name) = $from.$($p.Name)
             # we know this throws, try to remove its error
-            try {                
+            try {
                 $Error.RemoveAt(0)
             } catch{}
         }
@@ -360,7 +360,7 @@ class StatusCakeTest
             Confirmation = $this.ConfirmationServers
             TriggerRate = $this.AlertDelayRate
         }
-        
+
         # optionals
         if($ContactGroupID.length -gt 0)
         {
@@ -374,7 +374,7 @@ class StatusCakeTest
             $r.Add("BasicUser", $this.BasicCredential.UserName)
             $r.Add("BasicPass", $this.BasicCredential.GetNetworkCredential().Password)
         }
-        
+
         if($TestID -ne 0)
         {
             Write-Verbose "Adding a checkID to post object, as we're updating"
@@ -384,7 +384,7 @@ class StatusCakeTest
     }
 
     [Object] InvokeWithBackoff([scriptblock]$ScriptBlock) { # not in use
-        
+
         $backoff = 1
         $returnvalue = $null
         while($returnvalue -eq $null -and $this.retrycount -lt $this.MaxRetries) {
@@ -400,14 +400,14 @@ class StatusCakeTest
                 Write-Verbose "invoking a backoff: $backoff. We have tried $($this.retrycount) times"
             }
         }
-    
+
         return $returnvalue
     }
 }
 
 <#
 
-Node locations: 
+Node locations:
 (only valid for premium accounts)
 
 Australia � Sydney
@@ -453,4 +453,4 @@ United States � Silicon Valley, California
 United States � Phoenix, Arizona,
 United States � New York, New York
 
-#>    
+#>
