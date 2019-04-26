@@ -1,3 +1,5 @@
+# Install method is now obsolete
+
 Function Invoke-UTF8WebRequest
 {
     # based loosely on https://gist.github.com/angel-vladov/9482676
@@ -8,9 +10,9 @@ Function Invoke-UTF8WebRequest
     $body = $sr.ReadToEnd()
     $sr.Close()
     return [pscustomobject]@{
-        Content = $body; 
-        StatusCode = $res.StatusCode; 
-        Headers = $res.Headers; 
+        Content = $body;
+        StatusCode = $res.StatusCode;
+        Headers = $res.Headers;
         StatusDescription = $res.StatusDescription;
     }
 }

@@ -21,7 +21,7 @@ $StepTemplateParameters = @(
     },
     @{
         'Name' = 'ContactGroup';
-        'Label' = 'Contact Group';
+        'Label' = 'Contact Group Names, separated with newlines';
         'DisplaySettings' = @{
             "Octopus.ControlType" = "MultiLineText";
         }
@@ -50,36 +50,77 @@ $StepTemplateParameters = @(
         }
     }
 )
-Set-StrictMode -Version Latest
-
 Write-Debug "Starting Step Template $StepTemplateName ('$StepTemplateDescription') with $($StepTemplateParameters.Count) parameters"
 
-if(-not (Get-Module StatusCakeDSC -ListAvailable))
+Function Install-StatusCakeDSCIfRequired
 {
-    Write-Verbose "Installing StatusCakeDSC"
-    Install-Module StatusCakeDSC -Force -Verbose
+    [CmdletBinding()]
+    param()
+    if(-not (Get-Module StatusCakeDSC -ListAvailable))
+    {
+        Write-Verbose "Installing StatusCakeDSC"
+        Install-Module StatusCakeDSC -Force -Verbose
+    }
 }
 
-if($PSVersionTable.PSVersion.Major -lt 5)
+Function Test-PSVersionSupported
 {
-    throw "This Step Template requires PowerShell v5 or greater"
+    [CmdletBinding()]
+    param()
+    if((Get-PSVersionTable | % PSVersion | % Major) -lt 5)
+    {
+        throw "This Step Template requires PowerShell v5 or greater"
+    }
 }
 
-Write-Verbose "Loading StatusCakeDSC Classes"
-$modulePath = Get-DSCResource StatusCakeTest | Sort-Object -Property Version -Descending | Select-Object -first 1 | Select-Object -expand ParentPath
-$moduleClass = "$modulePath\StatusCakeTest.psm1"
+Function Get-PSVersionTable
+{
+    return $PSVersionTable
+}
 
-Invoke-Expression (Get-Content $moduleClass -raw)
+Function Get-DSCResourceModulePath
+{
+    [CmdletBinding()]
+    param($ResourceName)
 
-$secstring = $TestApiKey | ConvertTo-SecureString -AsPlainText -Force
-$TestApiCredential = [PSCredential]::new($TestUserName, $secstring)
+    Write-Verbose "Loading $ResourceName Classes"
+    $modulePath = Get-DSCResource $ResourceName | Sort-Object -Property Version -Descending | Select-Object -first 1 | Select-Object -expand ParentPath
+    $moduleClass = "$modulePath\$ResourceName.psm1"
+    return $moduleClass
+}
+Function Get-DSCResourceAsClassString # so we can load a stub during testing
+{
+    [CmdletBinding()]
+    param($ResourceName)
 
-$StepStatusCakeTest = [StatusCakeTest]::new()
+    Test-PSVersionSupported
+    Install-StatusCakeDSCIfRequired
 
-$StepStatusCakeTest.Ensure         = $Ensure
-$StepStatusCakeTest.Name           = $TestName
-$StepStatusCakeTest.URL            = $TestUrl
-$StepStatusCakeTest.ApiCredential  = $TestApiCredential
-$StepStatusCakeTest.ContactGroup   = "ExistingContactGroup"
+    $modulePath = Get-DSCResourceModulePath $ResourceName
+    return Get-Content $modulePath -raw -Verbose
+}
 
-$StepStatusCakeTest.Set()
+Function Invoke-StatusCakeStepTemplate # the init func
+{
+    [CmdletBinding()]
+    param()
+
+    $class = Get-DSCResourceAsClassString -ResourceName StatusCakeTest
+    Invoke-Expression $class # load it into local scope
+
+    $secstring = $TestApiKey | ConvertTo-SecureString -AsPlainText -Force
+    $TestApiCredential = [PSCredential]::new($TestUserName, $secstring)
+
+    $StepStatusCakeTest = [StatusCakeTest]::new()
+
+    $StepStatusCakeTest.Ensure         = $Ensure
+    $StepStatusCakeTest.Name           = $TestName
+    $StepStatusCakeTest.URL            = $TestUrl
+    $StepStatusCakeTest.ApiCredential  = $TestApiCredential
+    $StepStatusCakeTest.ContactGroup   = $ContactGroup -split "`r`n"
+
+    $StepStatusCakeTest.Set()
+
+}
+
+Invoke-Command -ScriptBlock { Invoke-StatusCakeStepTemplate } # called this way so we can mock Invoke-Command and test better

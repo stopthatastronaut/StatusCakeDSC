@@ -10,12 +10,6 @@ A PowerShell Desired State Configuration (DSC) Provider for simple status checks
 - StatusCake account & API Key
 - A check target
 
-## Quick Install
-
-```
-iex ([WebClient].DownloadString("https://githubusercontent.com/stopthatastronaut/StatusCakeDSC/master/install.ps1"))
-```
-
 ## Installing via git clone
 
 - Clone the repo down to your local machine
@@ -36,15 +30,15 @@ The quick start:
 configuration MyStatusCakeConfig
 {
     Import-DscResource -Name StatusCakeDSC
-    
+
     node(hostname)
     {
         StatusCakeContactGroup DevOpsGroup
         {
             Ensure = "present"
             GroupName = "DevOpsEngineers"
-            Email = @(	"oncall1@organisation.com", 
-            			"oncall2@organisation.com", 
+            Email = @(	"oncall1@organisation.com",
+            			"oncall2@organisation.com",
                         "oncall3@organisation.com")
             Mobile = "+1-111-1111"
             PingUrl = "https://infra.organisation.com/statusping"
@@ -71,7 +65,7 @@ There will be further documentation available by running `Get-Help about_DSCReso
 
 ## Credentials
 
-NOTE: As of version 2.0, credentials are protected in PSCredential Objects 
+NOTE: As of version 2.0, credentials are protected in PSCredential Objects
 
 #### v1.x
 
