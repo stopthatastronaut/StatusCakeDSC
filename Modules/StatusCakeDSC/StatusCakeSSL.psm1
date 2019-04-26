@@ -20,16 +20,17 @@ class StatusCakeSSL
     [PSCredential]$BasicCredential = [PSCredential]::Empty
 
     [DscProperty()]
+    [ValidateSet(300, 600, 1800, 3600, 86400, 2073600)]
     [int] $CheckRate = 300
 
     [DscProperty()]
-    [boolean] $AlertOnExpiration
+    [boolean] $AlertOnExpiration = $true
     [DscProperty()]
-    [boolean] $AlertOnProblems
+    [boolean] $AlertOnProblems = $true
 	[DscProperty()]
-    [boolean] $AlertOnReminders
+    [boolean] $AlertOnReminders = $true
     [DscProperty()]
-    [boolean] $AlertMixed
+    [boolean] $AlertMixed = $true
 
     [DscProperty()]
     [int] $FirstReminderInDays = 30
