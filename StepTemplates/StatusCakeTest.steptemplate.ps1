@@ -8,7 +8,7 @@ $StepTemplateParameters = @(
         'DefaultValue' = 'Present';
         "DisplaySettings" = @{
             "Octopus.ControlType" ="Select";
-            "Octopus.SelectOptions" = "Present\nAbsent"
+            "Octopus.SelectOptions" = "Present`nAbsent"
          }
     },
     @{
@@ -53,6 +53,15 @@ $StepTemplateParameters = @(
         'Name' = 'FindString';
         'Label' = 'String to find in the page';
         'HelpText' = "The test should look for this string in the returned text";
+        'DefaultValue' = '';
+        'DisplaySettings' = @{
+            "Octopus.ControlType" = "SingleLineText";
+        }
+    },
+    @{
+        'Name' = 'CheckRate';
+        'Label' = 'StatusCake check rate';
+        'HelpText' = "Number of seconds between tests. Defaults to 300";
         'DefaultValue' = '';
         'DisplaySettings' = @{
             "Octopus.ControlType" = "SingleLineText";
@@ -109,10 +118,51 @@ Function Get-DSCResourceAsClassString # so we can load a stub during testing
     return Get-Content $modulePath -raw -Verbose
 }
 
+Function Test-StepTemplateInputIsValid
+{
+    [CmdletBinding()]
+    param()
+
+    # urls
+    if(![uri]::IsWellFormedUriString($TestUrl, [urikind]::Absolute))
+    {
+        throw "The value of TestUrl was not a well formed absolute URL"
+    }
+
+    if([uri]$TestUrl -notlike "http*" )
+    {
+        throw "The value of TestUrl was not an http(s) URL"
+    }
+
+    # checkrates
+    if($CheckRate -ne "")
+    {
+        # this needs to be an integer
+        try {
+            $intCheckRate = [int]($CheckRate)
+        }
+        catch {
+            throw "The value of CheckRate was not convertable into an integer"
+        }
+
+        if($intCheckRate -gt 24000)
+        {
+            throw "CheckRate was too large. Maximum seconds is 24000."
+        }
+
+        if($intCheckRate -lt 0)
+        {
+            throw "CheckRate cannot be a negative number"
+        }
+    }
+}
+
 Function Invoke-StatusCakeStepTemplate # the init func
 {
     [CmdletBinding()]
     param()
+
+    Test-StepTemplateInputIsValid
 
     $class = Get-DSCResourceAsClassString -ResourceName StatusCakeTest
     Invoke-Expression $class # load it into local scope
@@ -127,9 +177,13 @@ Function Invoke-StatusCakeStepTemplate # the init func
     $StepStatusCakeTest.URL            = $TestUrl
     $StepStatusCakeTest.ApiCredential  = $TestApiCredential
     $StepStatusCakeTest.ContactGroup   = $ContactGroup -split "`r`n"
-    if($FindString -ne "")
+    if($FindString -ne "" -and $null -ne $FindString)
     {
         $StepStatusCakeTest.FindString = $FindString
+    }
+    if($CheckRate -ne "" -and $null -ne $CheckRate)
+    {
+        $StepStatusCakeTest.CheckRate = [int]($CheckRate)
     }
 
     $StepStatusCakeTest.Set()
